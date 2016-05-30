@@ -2,6 +2,7 @@ package com.project.myutilslibrary.mp3info;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import com.project.myutilslibrary.CloseStreamTool;
 import com.project.myutilslibrary.pictureloader.PictureScaleUtils;
@@ -21,6 +22,7 @@ import java.io.FileInputStream;
 public class ReadID3v2 {
 
     public static final String CHARSET = "GBK";
+    private static final String TAG = "ReadID3v2";
 
     public static Bitmap getAlbumPicture(String filePath, Activity activity) {
         Bitmap picture = null;
@@ -39,15 +41,17 @@ public class ReadID3v2 {
 
     public static Mp3Info getMp3Info(String filePath) throws Exception {
         Mp3Info mp3Info = new Mp3Info();
-
         File file = new File(filePath);
-        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+        FileInputStream fis = new FileInputStream(file);
 
-        int buffSize = 100 * 1024;
+        int buffSize = 1024*100;
+
+        if(buffSize > fis.available()){
+            buffSize = fis.available();
+        }
+
         byte[] buff = new byte[buffSize];
-        bis.read(buff, 0, buffSize);
-
-        CloseStreamTool.close(bis);
+        fis.read(buff, 0, buffSize);
 
         if (ByteUtil.indexOf("ID3".getBytes(), buff, 1, 512) == -1)
             throw new Exception("未发现ID3V2");
@@ -66,20 +70,20 @@ public class ReadID3v2 {
 
         if (ByteUtil.indexOf("TIT2".getBytes(), buff, 1, 512) != -1) {
             mp3Info.setTit2(new String(readInfo(buff, "TIT2"), CHARSET));
-            System.out.println("info:" + mp3Info.getTit2());
+            Log.w(TAG, "getMp3Info: "+mp3Info.getTit2() );
         }
 
         if (ByteUtil.indexOf("TPE1".getBytes(), buff, 1, 512) != -1) {
             mp3Info.setTpe1(new String(readInfo(buff, "TPE1"), CHARSET));
-            System.out.println("info:" + mp3Info.getTpe1());
-
+            Log.w(TAG, "getMp3Info: "+mp3Info.getTpe1() );
         }
 
         if (ByteUtil.indexOf("TALB".getBytes(), buff, 1, 512) != -1) {
             mp3Info.setTalb(new String(readInfo(buff, "TALB"), CHARSET));
-            System.out.println("info:" + mp3Info.getTalb());
+            Log.w(TAG, "getMp3Info: "+mp3Info.getTalb() );
         }
 
+        CloseStreamTool.close(fis);
         return mp3Info;
     }
 

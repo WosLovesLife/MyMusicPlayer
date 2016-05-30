@@ -74,7 +74,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
         }
         mInitialsArray = musicIndexArray;
         mMusicListAdapter.setPlayedPosition(currentIndex);
-        mLayoutManager.scrollToPosition(currentIndex);
+        mLayoutManager.scrollToPosition(currentIndex-3);
     }
 
     @Override

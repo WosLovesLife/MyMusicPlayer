@@ -110,13 +110,11 @@ public class Controller implements OnMusicListItemSelectedListener, OnMusicDispa
     /** 同步当前状态到UI层 */
     private void updateUi() {
         if (mOnPlayerStateChangedListener != null && mCurrentMusicBean != null) {
-            if (mCurrentPlayerState == PLAYER_STATE_PLAYING) {
-                mOnPlayerStateChangedListener.onPlayStateChanged(true, mCurrentMusicDuration, mCurrentMusicProgress,
-                        mCurrentMusicBean.getMusicName(), mCurrentMusicBean.getSinger());
-            } else {
-                mOnPlayerStateChangedListener.onPlayStateChanged(false, mCurrentMusicDuration, mCurrentMusicProgress,
-                        mCurrentMusicBean.getMusicName(), mCurrentMusicBean.getSinger());
-            }
+            mOnPlayerStateChangedListener.onPlayStateChanged(
+                    mCurrentPlayerState == PLAYER_STATE_PLAYING,
+                    mCurrentMusicDuration,
+                    mCurrentMusicProgress,
+                    mCurrentMusicBean);
         }
     }
 
@@ -180,7 +178,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnMusicDispa
 
         @Override
         public void onServiceStop() {
-            mMusicDispatcher.saveMusic(mCurrentMusicBean);
+            mMusicDispatcher.saveMusic();
         }
 
         @Override

@@ -16,12 +16,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.project.myutilslibrary.pictureloader.PictureLoader;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.activity.MusicListActivity;
+import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.engine.Controller;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
@@ -53,6 +56,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     private boolean isSeekBarHeld;
     private TextView mProgress_tv;
     private TextView mDuration_tv;
+    private ImageView mAlbumPicture;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -71,6 +75,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         mProgress_sb = (SeekBar) v.findViewById(R.id.progress_mainpageSeekBar);
         mDuration_tv = (TextView) v.findViewById(R.id.duration_TextView);
         mProgress_tv = (TextView) v.findViewById(R.id.currentProgress_TextView);
+        mAlbumPicture = (ImageView) v.findViewById(R.id.albumPicture);
         return v;
     }
 
@@ -79,9 +84,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         super.onActivityCreated(savedInstanceState);
 
         mController = Controller.newInstance(getActivity());
-        MainPagePlayerStateChangedListener mainPagePlayerStateChangedListener = new MainPagePlayerStateChangedListener();
-        mController.setOnPlayerStateChangedListener(mainPagePlayerStateChangedListener);
-
+        mController.setOnPlayerStateChangedListener(new MainPagePlayerStateChangedListener());
         setViewFunction();
     }
 
@@ -137,12 +140,14 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     private class MainPagePlayerStateChangedListener implements OnPlayerStateChangedListener {
 
         @Override
-        public void onPlayStateChanged(boolean isPlaying, int duration, int progress, String musicName, String singer) {
-            getActivity().setTitle(musicName);
-            MainPageActivity a = (MainPageActivity) getActivity();
+        public void onPlayStateChanged(boolean isPlaying,int duration, int progress, MusicBean musicBean) {
+            AppCompatActivity a = (AppCompatActivity) getActivity();
             android.support.v7.app.ActionBar supportActionBar = a.getSupportActionBar();
-            supportActionBar.setTitle(musicName);
-            supportActionBar.setSubtitle(singer);
+            supportActionBar.setTitle(musicBean.getMusicName());
+            supportActionBar.setSubtitle(musicBean.getSinger());
+
+//            PictureLoader.newInstance(getActivity()).setPictureFromBytesWithCache(musicBean.getPath(),mAlbumPicture);
+
             updateViewState(isPlaying, duration, progress);
         }
 

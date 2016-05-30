@@ -2,8 +2,11 @@ package com.project.myutilslibrary.pictureloader;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+
+import com.project.myutilslibrary.mp3info.ReadID3v2;
 
 /**
  * Created by zhangH on 2016/5/27.
@@ -34,14 +37,14 @@ public class PictureLoader {
     }
 
     public void setImageViewPictureWithCache(String picPath, ImageView imageView) {
-        getCache(picPath,imageView,mMemoryCache);
+        getCache(picPath, imageView, mMemoryCache);
     }
 
-    public void setImageViewThumbnailPictureWithCache(String picPath, ImageView imageView){
-        getCache(picPath,imageView,mMemoryThumbnailCache);
+    public void setImageViewThumbnailPictureWithCache(String picPath, ImageView imageView) {
+        getCache(picPath, imageView, mMemoryThumbnailCache);
     }
 
-    private void getCache(String picPath, ImageView imageView, MemoryCache memoryCache){
+    private void getCache(String picPath, ImageView imageView, MemoryCache memoryCache) {
         if (picPath == null || imageView == null) {
             return;
         }
@@ -59,7 +62,7 @@ public class PictureLoader {
 //        height = imageView.getMeasuredHeight();
 //        cache = PictureScaleUtils.getScaledBitmap(picPath, width, height);
 
-        cache = PictureScaleUtils.getScaledBitmap(picPath,mActivity);
+        cache = PictureScaleUtils.getScaledBitmap(picPath, mActivity);
 
         imageView.setImageBitmap(cache);
         if (cache != null) {
@@ -67,11 +70,53 @@ public class PictureLoader {
         }
     }
 
-    public void deleteSpecificCache(String picPath){
+    public void deleteSpecificCache(String picPath) {
         mMemoryCache.deleteCache(picPath);
     }
 
-    public void deleteSpecificThumbnailCache(String picPath){
+    public void deleteSpecificThumbnailCache(String picPath) {
         mMemoryThumbnailCache.deleteCache(picPath);
+    }
+
+
+    /** 从Mp3IDv2中获取专辑图片 */
+    public void setPictureFromBytesWithCache(String picPath, ImageView imageView) {
+        getCache(picPath, imageView);
+    }
+
+    private void getCache(final String picPath, final ImageView imageView) {
+        if (picPath == null || imageView == null) {
+            return;
+        }
+
+        try {
+            final byte[] apic = ReadID3v2.getMp3Info(picPath).getApic();
+
+            final Bitmap[] cache = {mMemoryCache.getCache(picPath)};
+            if (cache[0] != null) {
+                imageView.setImageBitmap(cache[0]);
+                return;
+            }
+
+            new Thread(){
+                @Override
+                public void run() {
+                    cache[0] = PictureScaleUtils.getScaledBitmap(apic, mActivity);
+                    mActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            imageView.setImageBitmap(cache[0]);
+                            if (cache[0] != null) {
+                                mMemoryCache.saveCache(picPath, cache[0]);
+                            }
+                            Log.w(TAG, "run: mMemoryCache.saveCache(picPath, cache[0]);"+cache[0] );
+                        }
+                    });
+                }
+            }.start();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

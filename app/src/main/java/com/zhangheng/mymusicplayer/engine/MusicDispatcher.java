@@ -37,6 +37,7 @@ public class MusicDispatcher {
     private static ArrayList<MusicBean> sMusicBeanArray;
     private static ArrayList<String> sMusicIndexArray;
 
+    /** 当前的索引 = loopIndex % 数据集合.size() */
     private int mCurrentIndex;
     private boolean mIsSearching;
 
@@ -85,7 +86,7 @@ public class MusicDispatcher {
         }
     }
 
-    private void notifyFoundLastSavedMusic(MusicBean musicBean){
+    private void notifyFoundLastSavedMusic(MusicBean musicBean) {
         for (OnMusicDispatchDataChangedListener listener : mDataChangedListenerList) {
             listener.onFoundLastPlayedMusic(musicBean);
         }
@@ -111,6 +112,7 @@ public class MusicDispatcher {
             Collections.sort(mTempIndexArray);
 
             int lastIndex = SharedPreferenceTool.getInteger(mContext, Constants.KEY_LAST_SAVED_MUSIC, 0);
+
             if (musicBeansArray != null && musicBeansArray.size() > lastIndex) {
                 mMusicBean = musicBeansArray.get(lastIndex);
                 mCurrentIndex = lastIndex;
@@ -129,21 +131,27 @@ public class MusicDispatcher {
     /** 根据提供的ListView<MusicBean> 生成对应的索引ArrayList<String> */
     private ArrayList<String> buildIndexArray(ArrayList<MusicBean> arrayList) {
         ArrayList<String> indexArray = new ArrayList<>();
+
         if (arrayList != null && arrayList.size() > 0) {
             for (MusicBean m : arrayList) {
                 indexArray.add(m.getPinyin().charAt(0) + "");
             }
         }
+
         return indexArray;
     }
 
     /** 刷新歌曲列表内容 ,重新扫描SD卡并更新到数据库 */
     public void scanSdcardMusics() {
         if (!mIsSearching) {
+            mIsSearching = true;
+
             long lastUpdatedTime = SharedPreferenceTool.getLong(mContext, Constants.KEY_LAST_DATABASE_UPDATED_TIME, 0L);
             long currentTime = System.currentTimeMillis();
+
             Log.w(TAG, "currentTime: " + currentTime + "; lastUpdatedTime: " + lastUpdatedTime);
             Log.w(TAG, "check4updateDatabase: 准备扫描SD卡");
+
             if (SdcardEnableUtils.isEnable()) {
                 searchMusicFromSdcard();
                 SharedPreferenceTool.saveLong(mContext, Constants.KEY_LAST_DATABASE_UPDATED_TIME, lastUpdatedTime);
@@ -152,6 +160,7 @@ public class MusicDispatcher {
                 mIsSearching = false;
             }
         }
+
         Toaster.toast(mContext, "正在扫描音乐,请稍候...");
     }
 
@@ -233,50 +242,44 @@ public class MusicDispatcher {
     public void playSelectedItem(int position) throws PlayerException {
         mCurrentIndex = position;
         Log.w(TAG, "playSelectedItem: mCurrentIndex: " + mCurrentIndex);
-        informPlay(mCurrentIndex);
+        informPlay();
     }
 
     public void getDefault() {
         Log.w(TAG, "playSelectedItem: getDefault: " + mCurrentIndex);
-        informPlay(mCurrentIndex);
+        informPlay();
     }
 
     public void getPre() {
         Log.w(TAG, "playSelectedItem: getPre: " + mCurrentIndex);
-        int index = 0;
-        if (sMusicBeanArray.size() > 0) {
-            index = Math.abs((--mCurrentIndex) % sMusicBeanArray.size());
+        if (--mCurrentIndex <= 0) {
+            mCurrentIndex = sMusicIndexArray.size() - 1;
         }
-        informPlay(index);
+        informPlay();
     }
 
     public void getNext() {
         Log.w(TAG, "playSelectedItem: getNext: " + mCurrentIndex);
-        int index = 0;
-        if (sMusicBeanArray.size() > 0) {
-            index = Math.abs((++mCurrentIndex) % sMusicBeanArray.size());
+        if (++mCurrentIndex >= sMusicBeanArray.size()) {
+            mCurrentIndex = 0;
         }
-        informPlay(index);
+        informPlay();
     }
 
-    private void informPlay(int index) {
+    private void informPlay() {
         if (mOnMusicListItemSelectedListener != null) {
-            if (sMusicBeanArray != null && sMusicBeanArray.size() > index) {
-                mOnMusicListItemSelectedListener.OnMusicListItemSelected(sMusicBeanArray.get(index));
+            if (sMusicBeanArray.size() > 0) {
+                mOnMusicListItemSelectedListener.OnMusicListItemSelected(sMusicBeanArray.get(mCurrentIndex));
             } else {
                 mOnMusicListItemSelectedListener.OnMusicListItemSelected(null);
             }
+            saveMusic();
         } else {
             Toaster.toast(mContext, "Error: Controller没有注册监听!请反馈开发者.");
         }
     }
 
-    public void saveMusic(MusicBean musicBean) {
-        int i = sMusicBeanArray.indexOf(musicBean);
-        SharedPreferenceTool.saveInteger(mContext, Constants.KEY_LAST_SAVED_MUSIC, i);
+    public void saveMusic() {
+        SharedPreferenceTool.saveInteger(mContext, Constants.KEY_LAST_SAVED_MUSIC, mCurrentIndex);
     }
-
-//    public void getLastSaved(_OnMusicDispatchLoadDataCompleteListener completeListener) {
-//        mOnMusicDispatchLoadDataCompleteListener = completeListener;
-//    }
 }
