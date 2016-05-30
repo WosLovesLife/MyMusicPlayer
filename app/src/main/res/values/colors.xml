@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--<color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>-->
+    <color name="colorPrimary">#4b7b94</color>
+    <color name="colorPrimaryDark">#3e687e</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="colorItemBG">#e2e4f2ec</color>
+    <color name="colorItemText">#d9202021</color>
+    <color name="colorSeekBarTime">#d9e9e9ed</color>
+    <color name="colorActionBarBG">#4b7b94</color>
+
+
+    <color name="colorListItem">#30dfdbdb</color>
+    <color name="colorListItemRipple">#f7ff1e92</color>
+</resources>

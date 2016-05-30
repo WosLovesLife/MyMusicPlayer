@@ -1,0 +1,24 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <com.project.myutilslibrary.view.quickindex.QuickBarView
+        android:id="@+id/quickBar"
+        android:layout_width="28dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="right"
+        android:background="#b8d4c5" />
+
+    <TextView
+        android:id="@+id/currentWord"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:visibility="invisible"
+        android:layout_gravity="center"
+        android:background="@drawable/shape_quickindex_bg_default"
+        android:gravity="center"
+        android:text="A"
+        android:textColor="#fff"
+        android:textSize="40sp" />
+
+</FrameLayout>
