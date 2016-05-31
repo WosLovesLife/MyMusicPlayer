@@ -3,6 +3,7 @@
     <!--<color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>-->
+    <!--<color name="colorPrimary">#4b7b94</color>-->
     <color name="colorPrimary">#4b7b94</color>
     <color name="colorPrimaryDark">#3e687e</color>
     <color name="colorAccent">#FF4081</color>
@@ -14,4 +15,6 @@
 
     <color name="colorListItem">#30dfdbdb</color>
     <color name="colorListItemRipple">#f7ff1e92</color>
+
+    <color name="colorVague">#1e000000</color>
 </resources>

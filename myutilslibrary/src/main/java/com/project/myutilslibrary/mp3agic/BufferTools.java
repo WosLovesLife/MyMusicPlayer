@@ -1,5 +1,7 @@
 package com.project.myutilslibrary.mp3agic;
 
+import android.util.Log;
+
 import java.io.UnsupportedEncodingException;
 
 public class BufferTools {
@@ -140,6 +142,9 @@ public class BufferTools {
 	}
 
 	public static byte[] copyBuffer(byte[] bytes, int offset, int length) {
+
+		Log.w("packSynchsafeInteger", "packSynchsafeInteger: "+bytes.length );
+
 		byte[] copy = new byte[length];
 		if (length > 0) {
 			System.arraycopy(bytes, offset, copy, 0, length);

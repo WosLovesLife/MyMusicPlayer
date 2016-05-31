@@ -2,15 +2,14 @@ package com.project.myutilslibrary.pictureloader;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.project.myutilslibrary.mp3agic.ID3v2;
-import com.project.myutilslibrary.mp3agic.InvalidDataException;
 import com.project.myutilslibrary.mp3agic.Mp3File;
-import com.project.myutilslibrary.mp3agic.UnsupportedTagException;
-
-import java.io.IOException;
 
 /**
  * Created by zhangH on 2016/5/27.
@@ -40,15 +39,39 @@ public class PictureLoader {
         return sPictureLoader;
     }
 
-    public void setImageViewPictureWithCache(String picPath, ImageView imageView) {
-        getCache(picPath, imageView, mMemoryCache);
+    public void setImageViewPictureWithCache(final String picPath, final ImageView imageView) {
+        if (imageView.getMeasuredHeight() == 0) {
+            imageView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    imageView.getViewTreeObserver().removeOnPreDrawListener(this);
+
+                    getCache(picPath, imageView, mMemoryCache);
+                    return true;
+                }
+            });
+        } else {
+            getCache(picPath, imageView, mMemoryCache);
+        }
     }
 
-    public void setImageViewThumbnailPictureWithCache(String picPath, ImageView imageView) {
-        getCache(picPath, imageView, mMemoryThumbnailCache);
+    public void setImageViewThumbnailPictureWithCache(final String picPath, final ImageView imageView) {
+        if (imageView.getMeasuredHeight() == 0) {
+            imageView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    imageView.getViewTreeObserver().removeOnPreDrawListener(this);
+
+                    getCache(picPath, imageView, mMemoryThumbnailCache);
+                    return true;
+                }
+            });
+        } else {
+            getCache(picPath, imageView, mMemoryThumbnailCache);
+        }
     }
 
-    private void getCache(String picPath, ImageView imageView, MemoryCache memoryCache) {
+    private void getCache(String picPath, final ImageView imageView, MemoryCache memoryCache) {
         if (picPath == null || imageView == null) {
             return;
         }
@@ -59,7 +82,7 @@ public class PictureLoader {
             return;
         }
 
-        cache = PictureScaleUtils.getScaledBitmap(picPath, mActivity);
+        cache = PictureScaleUtils.getScaledBitmap(picPath, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
 
         imageView.setImageBitmap(cache);
         if (cache != null) {
@@ -76,8 +99,24 @@ public class PictureLoader {
     }
 
 
-    public void setCacheBitmapFromMp3Idv3(String picPath, ImageView imageView) {
-        if (picPath == null || imageView == null) {
+    public void setCacheBitmapFromMp3Idv3(final String picPath, final ImageView imageView) {
+        if (imageView.getMeasuredHeight() == 0) {
+            imageView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    imageView.getViewTreeObserver().removeOnPreDrawListener(this);
+
+                    getCacheBitmap(picPath, imageView);
+                    return true;
+                }
+            });
+        } else {
+            getCacheBitmap(picPath, imageView);
+        }
+    }
+
+    private void getCacheBitmap(String picPath, ImageView imageView) {
+        if (picPath == null) {
             return;
         }
 
@@ -87,26 +126,76 @@ public class PictureLoader {
             return;
         }
 
-        try {
-            Mp3File mp3File = new Mp3File(picPath);
-            if (mp3File.hasId3v2Tag()){
-                ID3v2 id3v2Tag = mp3File.getId3v2Tag();
-                byte[] albumImage = id3v2Tag.getAlbumImage();
-                if (albumImage!=null){
-                    cache = BitmapFactory.decodeByteArray(albumImage,0,albumImage.length);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (UnsupportedTagException e) {
-            e.printStackTrace();
-        } catch (InvalidDataException e) {
-            e.printStackTrace();
+//        try {
+//            Mp3File mp3File = new Mp3File(picPath);
+//            if (mp3File.hasId3v2Tag()) {
+//                ID3v2 id3v2Tag = mp3File.getId3v2Tag();
+//                byte[] albumImage = id3v2Tag.getAlbumImage();
+//                if (albumImage != null) {
+////                    cache = PictureScaleUtils.getScaledBitmap(albumImage, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+//                    cache = PictureScaleUtils.getScaledBitmap(albumImage, mActivity);
+//                    imageView.setImageBitmap(cache);
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//        if (cache != null) {
+//            mMemoryCache.saveCache(picPath, cache);
+//        }
+
+        PictureAsyncTask pictureAsyncTask = new PictureAsyncTask(picPath,imageView);
+        pictureAsyncTask.executeOnExecutor(PictureAsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    class PictureAsyncTask extends AsyncTask<Integer, Void, Bitmap> {
+        String mPicPath;
+        ImageView mImageView;
+        private int mMeasuredWidth;
+        private int mMeasuredHeight;
+
+        PictureAsyncTask(String picPath, ImageView imageView) {
+            mPicPath = picPath;
+            mImageView = imageView;
         }
 
-        imageView.setImageBitmap(cache);
-        if (cache != null) {
-            mMemoryCache.saveCache(picPath, cache);
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            mMeasuredWidth = mImageView.getMeasuredWidth();
+            mMeasuredHeight = mImageView.getMeasuredHeight();
+        }
+
+        @Override
+        protected Bitmap doInBackground(Integer... params) {
+            Bitmap cache = null;
+            try {
+                Mp3File mp3File = new Mp3File(mPicPath);
+                if (mp3File.hasId3v2Tag()) {
+                    ID3v2 id3v2Tag = mp3File.getId3v2Tag();
+                    byte[] albumImage = id3v2Tag.getAlbumImage();
+                    if (albumImage != null) {
+//                        cache = PictureScaleUtils.getScaledBitmap(albumImage, mMeasuredWidth, mMeasuredHeight);
+                        cache = PictureScaleUtils.getScaledBitmap(albumImage, mActivity);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return cache;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap cache) {
+            super.onPostExecute(cache);
+
+            mImageView.setImageBitmap(cache);
+
+            if (cache != null) {
+                mMemoryCache.saveCache(mPicPath, cache);
+            }
         }
     }
 }

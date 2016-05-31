@@ -4,10 +4,17 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.text.format.DateFormat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -15,12 +22,16 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.project.myutilslibrary.pictureloader.PictureLoader;
+import com.project.myutilslibrary.wrapper_picture.FastBlur;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.activity.MusicListActivity;
@@ -56,6 +67,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     private boolean isSeekBarHeld;
     private TextView mProgress_tv;
     private TextView mDuration_tv;
+
+    /** 专辑图片ImageView */
     private ImageView mAlbumPicture;
 
     @Override
@@ -75,7 +88,9 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         mProgress_sb = (SeekBar) v.findViewById(R.id.progress_mainpageSeekBar);
         mDuration_tv = (TextView) v.findViewById(R.id.duration_TextView);
         mProgress_tv = (TextView) v.findViewById(R.id.currentProgress_TextView);
+
         mAlbumPicture = (ImageView) v.findViewById(R.id.albumPicture);
+
         return v;
     }
 
@@ -86,6 +101,29 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         mController = Controller.newInstance(getActivity());
         mController.setOnPlayerStateChangedListener(new MainPagePlayerStateChangedListener());
         setViewFunction();
+
+        mAlbumPicture.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                mAlbumPicture.getViewTreeObserver().removeOnPreDrawListener(this);
+
+                initAlbumPictureSize();
+
+                return true;
+            }
+        });
+    }
+
+    private void initAlbumPictureSize(){
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int widthPixels = displayMetrics.widthPixels;
+
+        ViewGroup.LayoutParams layoutParams = mAlbumPicture.getLayoutParams();
+        layoutParams.height = widthPixels;
+        layoutParams.width = widthPixels;
+        mAlbumPicture.setLayoutParams(layoutParams);
     }
 
     private void setViewFunction() {
@@ -180,6 +218,50 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         }
     }
     ///////////==注册Controller的监听接口end==/////////////
+
+//    private void applyBlur(final Bitmap bitmap) {
+//        mVagueBg.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+//            @Override
+//            public boolean onPreDraw() {
+//                mVagueBg.getViewTreeObserver().removeOnPreDrawListener(this);
+//                mVagueBg.buildDrawingCache();
+//
+//                Bitmap bmp = mVagueBg.getDrawingCache();
+//                blur(bitmap, mMainPageLayout);
+//                return true;
+//            }
+//        });
+//    }
+
+//    private void blur(Bitmap bkg, View view) {
+//        long startMs = System.currentTimeMillis();
+////        float scaleFactor = 1;
+////        float radius = 20;
+//        float scaleFactor = 4;
+//        float radius = 2;
+//
+////        int width = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+////        int height = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+////
+////        view.measure(width,height);
+//
+//        Log.w(TAG, "blur: height: "+view.getMeasuredHeight()+"; width: "+view.getMeasuredWidth());
+//
+//        Bitmap overlay = Bitmap.createBitmap((int) (view.getMeasuredWidth()/scaleFactor),
+//                (int) (view.getMeasuredHeight()/scaleFactor), Bitmap.Config.ARGB_8888);
+//        Canvas canvas = new Canvas(overlay);
+//        canvas.translate(-view.getLeft()/scaleFactor, -view.getTop()/scaleFactor);
+//        canvas.scale(1 / scaleFactor, 1 / scaleFactor);
+//        Paint paint = new Paint();
+//        paint.setFlags(Paint.FILTER_BITMAP_FLAG);
+//        canvas.drawBitmap(bkg, 0, 0, paint);
+//
+//        overlay = FastBlur.doBlur(overlay, (int)radius, true);
+//
+//        view.setBackground(new BitmapDrawable(getResources(), overlay));
+//
+//        Log.w(TAG, "blur: currentTimeMillis: "+ (System.currentTimeMillis() - startMs));
+//    }
 
     /////////////==进度条SeekBar的事件监听start==////////////////
     private class MainPageSeekBarChangeListener implements SeekBar.OnSeekBarChangeListener {

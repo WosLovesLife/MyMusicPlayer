@@ -38,6 +38,33 @@ public class PictureScaleUtils {
         return getScaledBitmap(path,size.x,size.y);
     }
 
+
+
+    public static Bitmap getScaledBitmap(byte[] apic, int width, int height){
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+
+        BitmapFactory.decodeByteArray(apic,0,apic.length,options);
+
+        float realWidth = options.outWidth;
+        float realHeight = options.outHeight;
+
+        int scale = 1;
+        if (realWidth > width || realHeight > height) {
+            if (realWidth > realHeight){
+                scale = Math.round(realWidth/width);
+            }else {
+                scale = Math.round(realHeight/height);
+            }
+        }
+
+        options.inJustDecodeBounds = false;
+        options.inSampleSize = scale;
+
+        return BitmapFactory.decodeByteArray(apic, 0, apic.length, options);
+    }
+
     public static Bitmap getScaledBitmap(byte[] apic, Activity activity){
 
         Point size = new Point();

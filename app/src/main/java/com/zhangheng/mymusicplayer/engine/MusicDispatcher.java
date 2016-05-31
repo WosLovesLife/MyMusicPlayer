@@ -252,7 +252,7 @@ public class MusicDispatcher {
 
     public void getPre() {
         Log.w(TAG, "playSelectedItem: getPre: " + mCurrentIndex);
-        if (--mCurrentIndex <= 0) {
+        if (--mCurrentIndex < 0) {
             mCurrentIndex = sMusicIndexArray.size() - 1;
         }
         informPlay();
