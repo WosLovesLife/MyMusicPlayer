@@ -1,10 +1,12 @@
 package com.zhangheng.mymusicplayer.activity;
 
 import android.app.Fragment;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
@@ -26,16 +28,24 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     protected void initComponentView() {
 
+        /** 加载Drawer对象,用于Toolbar确定和Drawer的位置关系 */
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+
+        /** 加载Toolbar,设置为应用的Actionb */
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setBackgroundColor(Color.TRANSPARENT);
         setSupportActionBar(toolbar);
         toolbar.setTitle("I Have A Dream");
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        /** 设置Drawer和Toolbar的开启关系 */
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
+
+        /** 通知系统同步关系 */
         toggle.syncState();
 
+        /** 加载Drawer导航组件,注册事件监听 */
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
     }
@@ -50,22 +60,6 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
             super.onBackPressed();
         }
     }
-
-/*    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main_page_list,menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.menu_item_list){
-
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }*/
 
     /** Drawer中的NavigationView的item的选项的事件触发 */
     @Override

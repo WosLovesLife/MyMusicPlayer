@@ -146,7 +146,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
             supportActionBar.setTitle(musicBean.getMusicName());
             supportActionBar.setSubtitle(musicBean.getSinger());
 
-//            PictureLoader.newInstance(getActivity()).setPictureFromBytesWithCache(musicBean.getPath(),mAlbumPicture);
+            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(musicBean.getPath(),mAlbumPicture);
 
             updateViewState(isPlaying, duration, progress);
         }

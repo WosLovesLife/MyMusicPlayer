@@ -2,11 +2,15 @@ package com.project.myutilslibrary.pictureloader;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.util.Log;
-import android.view.View;
+import android.graphics.BitmapFactory;
 import android.widget.ImageView;
 
-import com.project.myutilslibrary.mp3info.ReadID3v2;
+import com.project.myutilslibrary.mp3agic.ID3v2;
+import com.project.myutilslibrary.mp3agic.InvalidDataException;
+import com.project.myutilslibrary.mp3agic.Mp3File;
+import com.project.myutilslibrary.mp3agic.UnsupportedTagException;
+
+import java.io.IOException;
 
 /**
  * Created by zhangH on 2016/5/27.
@@ -55,13 +59,6 @@ public class PictureLoader {
             return;
         }
 
-//        int width = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-//        int height = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-//        imageView.measure(width,height);
-//        width = imageView.getMeasuredWidth();
-//        height = imageView.getMeasuredHeight();
-//        cache = PictureScaleUtils.getScaledBitmap(picPath, width, height);
-
         cache = PictureScaleUtils.getScaledBitmap(picPath, mActivity);
 
         imageView.setImageBitmap(cache);
@@ -79,44 +76,37 @@ public class PictureLoader {
     }
 
 
-    /** 从Mp3IDv2中获取专辑图片 */
-    public void setPictureFromBytesWithCache(String picPath, ImageView imageView) {
-        getCache(picPath, imageView);
-    }
-
-    private void getCache(final String picPath, final ImageView imageView) {
+    public void setCacheBitmapFromMp3Idv3(String picPath, ImageView imageView) {
         if (picPath == null || imageView == null) {
             return;
         }
 
+        Bitmap cache = mMemoryCache.getCache(picPath);
+        if (cache != null) {
+            imageView.setImageBitmap(cache);
+            return;
+        }
+
         try {
-            final byte[] apic = ReadID3v2.getMp3Info(picPath).getApic();
-
-            final Bitmap[] cache = {mMemoryCache.getCache(picPath)};
-            if (cache[0] != null) {
-                imageView.setImageBitmap(cache[0]);
-                return;
-            }
-
-            new Thread(){
-                @Override
-                public void run() {
-                    cache[0] = PictureScaleUtils.getScaledBitmap(apic, mActivity);
-                    mActivity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            imageView.setImageBitmap(cache[0]);
-                            if (cache[0] != null) {
-                                mMemoryCache.saveCache(picPath, cache[0]);
-                            }
-                            Log.w(TAG, "run: mMemoryCache.saveCache(picPath, cache[0]);"+cache[0] );
-                        }
-                    });
+            Mp3File mp3File = new Mp3File(picPath);
+            if (mp3File.hasId3v2Tag()){
+                ID3v2 id3v2Tag = mp3File.getId3v2Tag();
+                byte[] albumImage = id3v2Tag.getAlbumImage();
+                if (albumImage!=null){
+                    cache = BitmapFactory.decodeByteArray(albumImage,0,albumImage.length);
                 }
-            }.start();
-
-        } catch (Exception e) {
+            }
+        } catch (IOException e) {
             e.printStackTrace();
+        } catch (UnsupportedTagException e) {
+            e.printStackTrace();
+        } catch (InvalidDataException e) {
+            e.printStackTrace();
+        }
+
+        imageView.setImageBitmap(cache);
+        if (cache != null) {
+            mMemoryCache.saveCache(picPath, cache);
         }
     }
 }
