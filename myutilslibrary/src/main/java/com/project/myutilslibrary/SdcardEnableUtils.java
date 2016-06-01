@@ -1,4 +1,4 @@
-package com.zhangheng.mymusicplayer.utils;
+package com.project.myutilslibrary;
 
 import android.os.Environment;
 

@@ -13,13 +13,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.project.myutilslibrary.Toaster;
 import com.project.myutilslibrary.view.quickindex.QuickBarWithToast;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.dapter.RecyclerViewAdapter;
 import com.zhangheng.mymusicplayer.engine.MusicDispatcher;
 import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
-import com.zhangheng.mymusicplayer.utils.Toaster;
 
 import java.util.ArrayList;
 

@@ -1,20 +1,11 @@
 package com.zhangheng.mymusicplayer.ui;
 
-import android.app.ActionBar;
-import android.app.Activity;
 import android.app.Fragment;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.text.format.DateFormat;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -26,14 +17,11 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.project.myutilslibrary.pictureloader.PictureLoader;
-import com.project.myutilslibrary.wrapper_picture.FastBlur;
 import com.zhangheng.mymusicplayer.R;
-import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.activity.MusicListActivity;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.engine.Controller;
@@ -70,6 +58,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 
     /** 专辑图片ImageView */
     private ImageView mAlbumPicture;
+    private int mAlbumPictureSize;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -114,16 +103,34 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         });
     }
 
-    private void initAlbumPictureSize(){
+    private void initAlbumPictureSize() {
 
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int widthPixels = displayMetrics.widthPixels;
+//        DisplayMetrics displayMetrics = new DisplayMetrics();
+//        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+//        int widthPixels = displayMetrics.widthPixels;
+//
+//        ViewGroup.LayoutParams layoutParams = mAlbumPicture.getLayoutParams();
+//        layoutParams.height = widthPixels;
+//        layoutParams.width = widthPixels;
+//        mAlbumPicture.setLayoutParams(layoutParams);
+        int measuredWidth = mAlbumPicture.getMeasuredWidth();
+        int measuredHeight = mAlbumPicture.getMeasuredHeight();
+        int reference;
+        if (measuredWidth > measuredHeight) {
+            reference = measuredHeight;
+        } else {
+            reference = measuredWidth;
+        }
 
-        ViewGroup.LayoutParams layoutParams = mAlbumPicture.getLayoutParams();
-        layoutParams.height = widthPixels;
-        layoutParams.width = widthPixels;
-        mAlbumPicture.setLayoutParams(layoutParams);
+        int margin = (int) (reference * 0.15 + 0.5);
+        mAlbumPictureSize = reference - margin;
+
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mAlbumPicture.getLayoutParams();
+        params.height = mAlbumPictureSize;
+        params.width = mAlbumPictureSize;
+        params.setMargins(margin,margin,margin,0);
+
+        mAlbumPicture.setLayoutParams(params);
     }
 
     private void setViewFunction() {
@@ -178,13 +185,14 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     private class MainPagePlayerStateChangedListener implements OnPlayerStateChangedListener {
 
         @Override
-        public void onPlayStateChanged(boolean isPlaying,int duration, int progress, MusicBean musicBean) {
+        public void onPlayStateChanged(boolean isPlaying, int duration, int progress, MusicBean musicBean) {
             AppCompatActivity a = (AppCompatActivity) getActivity();
             android.support.v7.app.ActionBar supportActionBar = a.getSupportActionBar();
             supportActionBar.setTitle(musicBean.getMusicName());
             supportActionBar.setSubtitle(musicBean.getSinger());
 
-            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(musicBean.getPath(),mAlbumPicture);
+            Log.w(TAG, "onPlayStateChanged: ");
+            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(musicBean.getPath(), mAlbumPicture , mAlbumPictureSize, mAlbumPictureSize);
 
             updateViewState(isPlaying, duration, progress);
         }

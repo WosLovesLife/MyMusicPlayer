@@ -10,8 +10,6 @@ public interface DatabaseConstants {
     String MUSIC_DATABASE_NAME = "MusicPlayerDatabase.db";
     /** 游标工厂,默认不需要 */
     SQLiteDatabase.CursorFactory MUSIC_DATABASE_CURSOR_FACTORY = null;
-    /** 当前数据库版本 */
-    int MUSIC_DATABASE_VERSION = 2;
 
     /** 第一版的表名 */
     String MUSIC_TABLE_NAME = "musics";

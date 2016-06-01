@@ -7,6 +7,8 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.project.myutilslibrary.ServiceStateUtils;
+import com.project.myutilslibrary.Toaster;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
@@ -15,8 +17,6 @@ import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
 import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
-import com.zhangheng.mymusicplayer.utils.ServiceStateUtils;
-import com.zhangheng.mymusicplayer.utils.Toaster;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -216,7 +216,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnMusicDispa
         try {
             mIControll.prepare(mCurrentMusicBean.getPath());
         } catch (IOException e) {
-            Toaster.toast(mContext, "歌曲丢失");
+            Toaster.toast(mContext, "歌曲:\""+mCurrentMusicBean.getMusicName()+"\"丢失");
         }
         Log.w(TAG, "jumpTo: ");
     }

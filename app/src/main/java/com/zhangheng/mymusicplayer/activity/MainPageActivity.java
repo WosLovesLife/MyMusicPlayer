@@ -1,24 +1,29 @@
 package com.zhangheng.mymusicplayer.activity;
 
 import android.app.Fragment;
-import android.graphics.Color;
-import android.os.Bundle;
+import android.os.Build;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
+import android.view.WindowManager;
+import android.widget.LinearLayout;
 
+import com.project.myutilslibrary.Toaster;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.ui.MainPageFragment;
-import com.zhangheng.mymusicplayer.utils.Toaster;
+
+import java.lang.reflect.Field;
 
 /**
  * Created by zhangH on 2016/4/30.
  */
 public class MainPageActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
+
+    private static final String TAG = "MainPageActivity";
 
     @Override
     protected int initView() {
@@ -33,9 +38,12 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
 
         /** 加载Toolbar,设置为应用的Actionb */
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setBackgroundColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
+            sinkStatusBar(toolbar);
+        }
+
         setSupportActionBar(toolbar);
-        toolbar.setTitle("I Have A Dream");
 
         /** 设置Drawer和Toolbar的开启关系 */
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -48,6 +56,34 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
         /** 加载Drawer导航组件,注册事件监听 */
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    private void sinkStatusBar(Toolbar toolbar) {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
+        int statusBarHeight = 0;
+        try {
+            Class clazz = Class.forName("com.android.internal.R$dimen");
+            Object o = clazz.newInstance();
+            Field barHeight = clazz.getField("status_bar_height");
+            int resId = Integer.parseInt(barHeight.get(o).toString());
+            statusBarHeight = getResources().getDimensionPixelSize(resId);
+
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) toolbar.getLayoutParams();
+            params.height = params.height + statusBarHeight;
+            toolbar.setLayoutParams(params);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Log.w(TAG, "initComponentView: statusBarHeight: " + statusBarHeight);
+
+//        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) toolbar.getLayoutParams();
+//
+//        layoutParams.setMargins(0, statusBarHeight, 0, 0);
+//        toolbar.setLayoutParams(layoutParams);
+
+        toolbar.setPadding(0, statusBarHeight, 0, 0);
     }
 
     /** 拦截回退键, 判断如果当前Drawer处于打开状态,则关闭Drawer. */

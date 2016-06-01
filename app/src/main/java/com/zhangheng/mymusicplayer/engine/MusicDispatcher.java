@@ -6,14 +6,15 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.project.myutilslibrary.PinyinUtils;
+import com.project.myutilslibrary.SdcardEnableUtils;
+import com.project.myutilslibrary.SharedPreferenceTool;
+import com.project.myutilslibrary.Toaster;
+import com.project.myutilslibrary.mp3agic.Mp3File;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.exception.PlayerException;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
-import com.zhangheng.mymusicplayer.utils.SdcardEnableUtils;
-import com.zhangheng.mymusicplayer.utils.SharedPreferenceTool;
-import com.zhangheng.mymusicplayer.utils.Toaster;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -113,7 +114,7 @@ public class MusicDispatcher {
 
             int lastIndex = SharedPreferenceTool.getInteger(mContext, Constants.KEY_LAST_SAVED_MUSIC, 0);
 
-            if (musicBeansArray != null && musicBeansArray.size() > lastIndex) {
+            if (musicBeansArray.size() > lastIndex) {
                 mMusicBean = musicBeansArray.get(lastIndex);
                 mCurrentIndex = lastIndex;
             }
@@ -153,6 +154,7 @@ public class MusicDispatcher {
             Log.w(TAG, "check4updateDatabase: 准备扫描SD卡");
 
             if (SdcardEnableUtils.isEnable()) {
+                Toaster.toastLong(mContext, "正在扫描音乐,请稍候...");
                 searchMusicFromSdcard();
                 SharedPreferenceTool.saveLong(mContext, Constants.KEY_LAST_DATABASE_UPDATED_TIME, lastUpdatedTime);
             } else {
@@ -161,7 +163,6 @@ public class MusicDispatcher {
             }
         }
 
-        Toaster.toast(mContext, "正在扫描音乐,请稍候...");
     }
 
     private void searchMusicFromSdcard() {
@@ -223,7 +224,18 @@ public class MusicDispatcher {
                                 musicName = unknownName;
                                 Log.w(TAG, "scanSdcard: 未知歌曲: 歌名: " + musicName);
                             }
-                            mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName)));
+                            try {
+                                Mp3File m = new Mp3File(filePath);
+                                int lengthInSeconds = (int) m.getLengthInSeconds();
+                                if (lengthInSeconds == 0 || lengthInSeconds > 90) {
+                                    mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), lengthInSeconds));
+                                    continue;
+                                }
+                                Log.w(TAG, "scanSdcard: getLengthInSeconds: " + lengthInSeconds);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), 0));
                         }
                     }
                 }

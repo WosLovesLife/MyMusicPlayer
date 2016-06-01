@@ -13,7 +13,7 @@ public class MusicBean implements Serializable, Comparable<MusicBean> {
     private String mMusicName;
     private String mSinger;
     private String mPath;
-    private int duration;
+    private int mDuration;
     private String mPinyin;
 
 
@@ -21,12 +21,13 @@ public class MusicBean implements Serializable, Comparable<MusicBean> {
 
     }
 
-    public MusicBean(int id, String musicName, String singer, String path, String pinyin) {
+    public MusicBean(int id, String musicName, String singer, String path, String pinyin, int duration) {
         mId = id;
         mMusicName = musicName;
         mSinger = singer;
         mPath = path;
         mPinyin = pinyin;
+        mDuration = duration;
     }
 
     public String getPinyin() {
@@ -42,11 +43,11 @@ public class MusicBean implements Serializable, Comparable<MusicBean> {
     }
 
     public int getDuration() {
-        return duration;
+        return mDuration;
     }
 
     public void setDuration(int duration) {
-        this.duration = duration;
+        this.mDuration = duration;
     }
 
     public String getMusicName() {
@@ -80,7 +81,7 @@ public class MusicBean implements Serializable, Comparable<MusicBean> {
                 ", mMusicName='" + mMusicName + '\'' +
                 ", mSinger='" + mSinger + '\'' +
                 ", mPath='" + mPath + '\'' +
-                ", duration=" + duration +
+                ", duration=" + mDuration +
                 ", mPinyin='" + mPinyin + '\'' +
                 '}';
     }

@@ -6,11 +6,12 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import com.project.myutilslibrary.CloseStreamTool;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.db.MusicDatabase;
+import com.zhangheng.mymusicplayer.db.MusicDbSchema.MusicTable.Cols;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.global.DatabaseConstants;
-import com.zhangheng.mymusicplayer.utils.CloseStreamTool;
 
 import java.util.ArrayList;
 
@@ -39,7 +40,8 @@ public class MusicDatabaseEngine {
                 String name = cursor.getString(2);
                 String singer = cursor.getString(3);
                 String index = cursor.getString(4);
-                musicBeanArray.add(new MusicBean(id, name, singer, path,index));
+                int duration = cursor.getInt(5);
+                musicBeanArray.add(new MusicBean(id, name, singer, path,index,duration));
             }
             CloseStreamTool.close(cursor);
         }
@@ -53,10 +55,11 @@ public class MusicDatabaseEngine {
             truncateTable(context);
             for (MusicBean music :
                     musicBeanArray) {
-                contentValues.put(DatabaseConstants.MUSIC_FIELD_PATH,music.getPath());
-                contentValues.put(DatabaseConstants.MUSIC_FIELD_NAME,music.getMusicName());
-                contentValues.put(DatabaseConstants.MUSIC_FIELD_SINGER,music.getSinger());
-                contentValues.put(DatabaseConstants.MUSIC_FIELD_INDEX,music.getPinyin());
+                contentValues.put(Cols.MUSIC_FIELD_PATH,music.getPath());
+                contentValues.put(Cols.MUSIC_FIELD_NAME,music.getMusicName());
+                contentValues.put(Cols.MUSIC_FIELD_SINGER,music.getSinger());
+                contentValues.put(Cols.MUSIC_FIELD_INDEX,music.getPinyin());
+                contentValues.put(Cols.MUSIC_FIELD_DURATION,music.getDuration());
                 long insert = db.insert(TABLE_NAME, DatabaseConstants.MUSIC_FIELD_KEY, contentValues);
                 Log.w(TAG, "updateContent: 向数据库第"+insert+"行插入了新条目." );
                 contentValues.clear();
