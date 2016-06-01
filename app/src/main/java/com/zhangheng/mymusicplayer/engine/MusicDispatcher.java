@@ -13,6 +13,7 @@ import com.project.myutilslibrary.mp3agic.Mp3File;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.exception.PlayerException;
 import com.zhangheng.mymusicplayer.global.Constants;
+import com.zhangheng.mymusicplayer.listener.OnFoundLastPlayedMusicListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
 
@@ -32,7 +33,8 @@ public class MusicDispatcher {
     private static MusicDispatcher sMusicDispatcher;
     private Context mContext;
 
-    private List<OnMusicDispatchDataChangedListener> mDataChangedListenerList;
+    private OnMusicDispatchDataChangedListener mDataChangedListenerList;
+    private OnFoundLastPlayedMusicListener mOnFoundLastPlayedMusicListener;
     private OnMusicListItemSelectedListener mOnMusicListItemSelectedListener;
 
     private static ArrayList<MusicBean> sMusicBeanArray;
@@ -56,11 +58,12 @@ public class MusicDispatcher {
     }
 
     public void setOnMusicDispatchDataChangedListener(OnMusicDispatchDataChangedListener onMusicDispatchDataChangedListener) {
-        if (mDataChangedListenerList == null) {
-            mDataChangedListenerList = new ArrayList<>();
-        }
-        mDataChangedListenerList.add(onMusicDispatchDataChangedListener);
+        mDataChangedListenerList = onMusicDispatchDataChangedListener;
         onMusicDispatchDataChangedListener.onDispatchDataChanged(sMusicBeanArray, sMusicIndexArray, mCurrentIndex);
+    }
+
+    public void setOnFoundLastPlayedMusicListener(OnFoundLastPlayedMusicListener foundLastPlayedMusicListener) {
+        mOnFoundLastPlayedMusicListener = foundLastPlayedMusicListener;
     }
 
     public void setOnMusicListItemSelectedListener(OnMusicListItemSelectedListener musicListItemSelectedListener) {
@@ -82,14 +85,14 @@ public class MusicDispatcher {
     }
 
     private void notifyDataSetChanged() {
-        for (OnMusicDispatchDataChangedListener listener : mDataChangedListenerList) {
-            listener.onDispatchDataChanged(sMusicBeanArray, sMusicIndexArray, mCurrentIndex);
+        if (mDataChangedListenerList != null) {
+            mDataChangedListenerList.onDispatchDataChanged(sMusicBeanArray, sMusicIndexArray, mCurrentIndex);
         }
     }
 
     private void notifyFoundLastSavedMusic(MusicBean musicBean) {
-        for (OnMusicDispatchDataChangedListener listener : mDataChangedListenerList) {
-            listener.onFoundLastPlayedMusic(musicBean);
+        if (mOnFoundLastPlayedMusicListener != null) {
+            mOnFoundLastPlayedMusicListener.onFoundLastPlayedMusic(musicBean);
         }
     }
 
@@ -227,7 +230,7 @@ public class MusicDispatcher {
                             try {
                                 Mp3File m = new Mp3File(filePath);
                                 int lengthInSeconds = (int) m.getLengthInSeconds();
-                                if (lengthInSeconds == 0 || lengthInSeconds > 90) {
+                                if (lengthInSeconds > 90) {
                                     mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), lengthInSeconds));
                                     continue;
                                 }
@@ -285,6 +288,10 @@ public class MusicDispatcher {
             } else {
                 mOnMusicListItemSelectedListener.OnMusicListItemSelected(null);
             }
+
+            mDataChangedListenerList.onItemChanged(mCurrentIndex);
+            Log.w(TAG, "informPlay: mDataChangedListenerList.onItemChanged(mCurrentIndex): "+ mCurrentIndex );
+
             saveMusic();
         } else {
             Toaster.toast(mContext, "Error: Controller没有注册监听!请反馈开发者.");

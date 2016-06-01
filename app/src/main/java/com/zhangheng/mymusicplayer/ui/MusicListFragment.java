@@ -66,19 +66,29 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
     public void onDispatchDataChanged(ArrayList<MusicBean> musicBeanArray, ArrayList<String> musicIndexArray, int currentIndex) {
         if (mMusicListAdapter == null) {
             mMusicListAdapter = new RecyclerViewAdapter(musicBeanArray);
+
             mRecyclerView.setAdapter(mMusicListAdapter);
             mMusicListAdapter.setOnItemClickListener(this);
         } else {
             mMusicListAdapter.notifyDataSetChanged();
+
             Toaster.toast(getActivity(), "音乐列表更新了~");
         }
+
         mInitialsArray = musicIndexArray;
+
         mMusicListAdapter.setPlayedPosition(currentIndex);
         mLayoutManager.scrollToPosition(currentIndex-3);
     }
 
+    int a ;
+    /** 由于某些原因,例如歌曲不存在等导致播放自动跳到下一首.这种时候需要这里同步位置 */
     @Override
-    public void onFoundLastPlayedMusic(MusicBean musicBean) {
+    public void onItemChanged(int currentIndex) {
+        mMusicListAdapter.setPlayedPosition(currentIndex);
+
+        mLayoutManager.scrollToPosition(currentIndex+5);
+        Log.w("MusicList", "onItemChanged: "+(++a) );
     }
 
     /** 用户滑动列表右边的QuickBar,滚动至对应的界面 */

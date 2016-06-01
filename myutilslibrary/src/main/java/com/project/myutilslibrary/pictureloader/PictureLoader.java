@@ -3,6 +3,8 @@ package com.project.myutilslibrary.pictureloader;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Message;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
@@ -113,14 +115,16 @@ public class PictureLoader {
         }
     }*/
 
-    public void setCacheBitmapFromMp3Idv3(final String picPath, final ImageView imageView, int imageViewWidth, int imageViewHeight) {
+    public void setCacheBitmapFromMp3Idv3(final Handler handler, final String picPath, final ImageView imageView, int imageViewWidth, int imageViewHeight) {
         if (picPath == null) {
             return;
         }
 
         Bitmap cache = mMemoryCache.getCache(picPath);
         if (cache != null) {
-            imageView.setImageBitmap(cache);
+            Message message = handler.obtainMessage(0, cache);
+            handler.sendMessage(message);
+//            imageView.setImageBitmap(cache);
             return;
         }
 
@@ -131,20 +135,20 @@ public class PictureLoader {
                     public boolean onPreDraw() {
                         imageView.getViewTreeObserver().removeOnPreDrawListener(this);
 
-                        getCacheBitmap(picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+                        getCacheBitmap(handler, picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
                         return true;
                     }
                 });
             } else {
-                getCacheBitmap(picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+                getCacheBitmap(handler, picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
             }
         } else {
-            getCacheBitmap(picPath, imageView, imageViewWidth, imageViewHeight);
+            getCacheBitmap(handler, picPath, imageView, imageViewWidth, imageViewHeight);
         }
     }
 
-    private void getCacheBitmap(String picPath, ImageView imageView, int imageViewWidth, int imageViewHeight) {
-        PictureAsyncTask pictureAsyncTask = new PictureAsyncTask(picPath, imageView, imageViewWidth, imageViewHeight);
+    private void getCacheBitmap(Handler handler, String picPath, ImageView imageView, int imageViewWidth, int imageViewHeight) {
+        PictureAsyncTask pictureAsyncTask = new PictureAsyncTask(handler, picPath, imageView, imageViewWidth, imageViewHeight);
         pictureAsyncTask.executeOnExecutor(PictureAsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -153,17 +157,14 @@ public class PictureLoader {
         ImageView mImageView;
         private int mMeasuredWidth;
         private int mMeasuredHeight;
+        Handler mHandler;
 
-        PictureAsyncTask(String picPath, ImageView imageView, int width, int height) {
+        PictureAsyncTask(Handler handler, String picPath, ImageView imageView, int width, int height) {
+            mHandler = handler;
             mPicPath = picPath;
             mImageView = imageView;
-//            if (size <= 0){
-//                mMeasuredWidth = mImageView.getMeasuredWidth();
-//                mMeasuredHeight = mImageView.getMeasuredHeight();
-//            }else {
             mMeasuredWidth = width;
             mMeasuredHeight = height;
-//            }
         }
 
         @Override
@@ -176,7 +177,6 @@ public class PictureLoader {
                     byte[] albumImage = id3v2Tag.getAlbumImage();
                     if (albumImage != null) {
                         cache = PictureScaleUtils.getScaledBitmap(albumImage, mMeasuredWidth, mMeasuredHeight);
-//                        cache = PictureScaleUtils.getScaledBitmap(albumImage, mActivity);
                     }
                 }
             } catch (Exception e) {
@@ -189,7 +189,9 @@ public class PictureLoader {
         protected void onPostExecute(Bitmap cache) {
             super.onPostExecute(cache);
 
-            mImageView.setImageBitmap(cache);
+//            mImageView.setImageBitmap(cache);
+            Message message = mHandler.obtainMessage(0, cache);
+            mHandler.sendMessage(message);
 
             if (cache != null) {
                 mMemoryCache.saveCache(mPicPath, cache);

@@ -1,6 +1,10 @@
 package com.zhangheng.mymusicplayer.activity;
 
 import android.app.Fragment;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -9,10 +13,13 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 
 import com.project.myutilslibrary.Toaster;
+import com.project.myutilslibrary.wrapper_picture.BlurUtils;
+import com.project.myutilslibrary.wrapper_picture.FastBlur;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.ui.MainPageFragment;
 
@@ -24,6 +31,7 @@ import java.lang.reflect.Field;
 public class MainPageActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = "MainPageActivity";
+    private LinearLayout mPlayerBg;
 
     @Override
     protected int initView() {
@@ -56,6 +64,8 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
         /** 加载Drawer导航组件,注册事件监听 */
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        mPlayerBg = (LinearLayout) findViewById(R.id.playerMainPageBg);
     }
 
     private void sinkStatusBar(Toolbar toolbar) {
@@ -77,11 +87,6 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
         }
 
         Log.w(TAG, "initComponentView: statusBarHeight: " + statusBarHeight);
-
-//        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) toolbar.getLayoutParams();
-//
-//        layoutParams.setMargins(0, statusBarHeight, 0, 0);
-//        toolbar.setLayoutParams(layoutParams);
 
         toolbar.setPadding(0, statusBarHeight, 0, 0);
     }
@@ -126,5 +131,14 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     protected Fragment initComponentFragment() {
         return new MainPageFragment();
+    }
+
+    public void setPlayerBg(Bitmap background) {
+        if (background != null) {
+            BitmapDrawable drawable = BlurUtils.makePictureBlur(getApplicationContext(), background, mPlayerBg, 1, 100);
+            mPlayerBg.setBackground(drawable);
+        } else {
+            mPlayerBg.setBackgroundResource(R.drawable.playpage_background);
+        }
     }
 }

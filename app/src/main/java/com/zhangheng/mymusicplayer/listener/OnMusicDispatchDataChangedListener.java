@@ -12,5 +12,5 @@ public interface OnMusicDispatchDataChangedListener {
     /** 当MusicDispatcher更新了数据集合时触发 */
     void onDispatchDataChanged(ArrayList<MusicBean> musicBeanArray, ArrayList<String> musicIndexArray, int currentIndex);
 
-    void onFoundLastPlayedMusic(MusicBean musicBean);
+    void onItemChanged(int currentItem);
 }

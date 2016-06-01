@@ -2,7 +2,13 @@ package com.zhangheng.mymusicplayer.ui;
 
 import android.app.Fragment;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.text.format.DateFormat;
@@ -21,7 +27,9 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.project.myutilslibrary.pictureloader.PictureLoader;
+import com.project.myutilslibrary.wrapper_picture.FastBlur;
 import com.zhangheng.mymusicplayer.R;
+import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.activity.MusicListActivity;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.engine.Controller;
@@ -103,6 +111,15 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         });
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mHandler!= null){
+            mHandler.removeCallbacksAndMessages(null);
+            mHandler = null;
+        }
+    }
+
     private void initAlbumPictureSize() {
 
 //        DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -181,6 +198,25 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     }
     ///////////== 关于ActionBar的方法end==/////////////
 
+    public Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case 0: // 给北京图片
+                    setPlayerSkin((Bitmap) msg.obj);
+                    break;
+            }
+        }
+    };
+
+    private void setPlayerSkin(Bitmap bitmap) {
+        mAlbumPicture.setImageBitmap(bitmap);
+
+        MainPageActivity activity = (MainPageActivity) getActivity();
+        activity.setPlayerBg(bitmap);
+    }
+
     ///////////==注册Controller的监听接口start==/////////////
     private class MainPagePlayerStateChangedListener implements OnPlayerStateChangedListener {
 
@@ -192,7 +228,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
             supportActionBar.setSubtitle(musicBean.getSinger());
 
             Log.w(TAG, "onPlayStateChanged: ");
-            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(musicBean.getPath(), mAlbumPicture , mAlbumPictureSize, mAlbumPictureSize);
+            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(mHandler,musicBean.getPath(), mAlbumPicture , mAlbumPictureSize, mAlbumPictureSize);
+
 
             updateViewState(isPlaying, duration, progress);
         }
@@ -227,49 +264,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     }
     ///////////==注册Controller的监听接口end==/////////////
 
-//    private void applyBlur(final Bitmap bitmap) {
-//        mVagueBg.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-//            @Override
-//            public boolean onPreDraw() {
-//                mVagueBg.getViewTreeObserver().removeOnPreDrawListener(this);
-//                mVagueBg.buildDrawingCache();
-//
-//                Bitmap bmp = mVagueBg.getDrawingCache();
-//                blur(bitmap, mMainPageLayout);
-//                return true;
-//            }
-//        });
-//    }
-
-//    private void blur(Bitmap bkg, View view) {
-//        long startMs = System.currentTimeMillis();
-////        float scaleFactor = 1;
-////        float radius = 20;
-//        float scaleFactor = 4;
-//        float radius = 2;
-//
-////        int width = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-////        int height = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-////
-////        view.measure(width,height);
-//
-//        Log.w(TAG, "blur: height: "+view.getMeasuredHeight()+"; width: "+view.getMeasuredWidth());
-//
-//        Bitmap overlay = Bitmap.createBitmap((int) (view.getMeasuredWidth()/scaleFactor),
-//                (int) (view.getMeasuredHeight()/scaleFactor), Bitmap.Config.ARGB_8888);
-//        Canvas canvas = new Canvas(overlay);
-//        canvas.translate(-view.getLeft()/scaleFactor, -view.getTop()/scaleFactor);
-//        canvas.scale(1 / scaleFactor, 1 / scaleFactor);
-//        Paint paint = new Paint();
-//        paint.setFlags(Paint.FILTER_BITMAP_FLAG);
-//        canvas.drawBitmap(bkg, 0, 0, paint);
-//
-//        overlay = FastBlur.doBlur(overlay, (int)radius, true);
-//
-//        view.setBackground(new BitmapDrawable(getResources(), overlay));
-//
-//        Log.w(TAG, "blur: currentTimeMillis: "+ (System.currentTimeMillis() - startMs));
-//    }
 
     /////////////==进度条SeekBar的事件监听start==////////////////
     private class MainPageSeekBarChangeListener implements SeekBar.OnSeekBarChangeListener {

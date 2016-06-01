@@ -59,8 +59,16 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         mOnItemClickListener = onItemClickListener;
     }
 
-    public void setPlayedPosition(int position){
+    public void setPlayedPosition(int position) {
+
+        /* 通知以前的条目刷新,去除播放状态icon */
+        notifyItemChanged(mPlaying);
+
+        /* 将播放状态icon改为当前点击的条目 */
         mPlaying = position;
+
+        /* 通知刷新当前的条目 */
+        notifyItemChanged(position);
     }
 
 
@@ -89,12 +97,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 public void onClick(View v) {
 
                     if (mOnItemClickListener != null) {
-                        /* 通知以前的条目刷新,去除播放状态icon */
-                        notifyItemChanged(mPlaying);
 
-                        /* 将播放状态icon改为当前点击的条目 */
-                        mPlaying = position;
-                        notifyItemChanged(position);
+                        setPlayedPosition(position);
 
                         /* 通知观察者条目被点击 */
                         if (mOnItemClickListener != null)

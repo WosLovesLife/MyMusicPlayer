@@ -12,7 +12,7 @@ public class Toaster {
 		if(toast != null){
 			toast.cancel();
 		}
-		toast = Toast.makeText(BaseApplication.getGlobalContext(), s, Toast.LENGTH_SHORT);
+		toast = Toast.makeText(con, s, Toast.LENGTH_SHORT);
 		toast.show();
 	}
 	
@@ -20,8 +20,7 @@ public class Toaster {
 		if(toast != null){
 			toast.cancel();
 		}
-//		toast = Toast.makeText(con, s, Toast.LENGTH_LONG);
-		toast = Toast.makeText(BaseApplication.getGlobalContext(), s, Toast.LENGTH_LONG);
+		toast = Toast.makeText(con, s, Toast.LENGTH_LONG);
 		toast.show();
 	}
 }

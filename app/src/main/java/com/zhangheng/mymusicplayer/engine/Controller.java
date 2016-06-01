@@ -12,6 +12,7 @@ import com.project.myutilslibrary.Toaster;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
+import com.zhangheng.mymusicplayer.listener.OnFoundLastPlayedMusicListener;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
@@ -28,7 +29,7 @@ import java.util.ArrayList;
  * 通过调度器Dispatcher获取歌曲资源
  * Created by zhangH on 2016/4/30.
  */
-public class Controller implements OnMusicListItemSelectedListener, OnMusicDispatchDataChangedListener {
+public class Controller implements OnMusicListItemSelectedListener, OnFoundLastPlayedMusicListener {
     private static final String TAG = Constants.TAG;
 
     /** 单例的实例,由newsInstance构造,不为null时返回 */
@@ -89,12 +90,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnMusicDispa
         /** 保定和调度器的关联 */
         mMusicDispatcher = MusicDispatcher.newInstance(mContext);
         mMusicDispatcher.setOnMusicListItemSelectedListener(this);
-        mMusicDispatcher.setOnMusicDispatchDataChangedListener(this);
-    }
-
-    /** 不需要该方法 忽略 */
-    @Override
-    public void onDispatchDataChanged(ArrayList<MusicBean> musicBeanArray, ArrayList<String> musicIndexArray, int currentIndex) {
+        mMusicDispatcher.setOnFoundLastPlayedMusicListener(this);
     }
 
     /** 获取上次应用结束后保存的进度. */
@@ -217,6 +213,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnMusicDispa
             mIControll.prepare(mCurrentMusicBean.getPath());
         } catch (IOException e) {
             Toaster.toast(mContext, "歌曲:\""+mCurrentMusicBean.getMusicName()+"\"丢失");
+            next();
         }
         Log.w(TAG, "jumpTo: ");
     }
