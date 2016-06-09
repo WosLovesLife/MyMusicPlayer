@@ -1,8 +1,10 @@
 package com.zhangheng.mymusicplayer.engine;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.util.Log;
@@ -10,17 +12,16 @@ import android.util.Log;
 import com.project.myutilslibrary.ServiceStateUtils;
 import com.project.myutilslibrary.Toaster;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
+import com.zhangheng.mymusicplayer.broadcast.HeadsetOffBroadcast;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.listener.OnFoundLastPlayedMusicListener;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
-import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
 import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * 控制器类,歌曲播放的逻辑判断在这里处理
@@ -36,6 +37,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
     private static Controller sController;
     /** 保证单例不易被回收的ApplicationContext全局上下文对象 */
     private Context mContext;
+    /** 调用Service方法的IBinder接口 */
     /** 调用Service方法的IBinder接口 */
     private IControll mIControll;
     /** 服务绑定状态的监听器 */
@@ -58,6 +60,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
     //-- 沟通调度器的变量/常量-start --
     private MusicBean mCurrentMusicBean;
     private MusicDispatcher mMusicDispatcher;
+    private HeadsetOffBroadcast mHeadsetOffBroadcast;
     //-- 沟通调度器的变量/常量-end --
 
     private Controller(Context context) {
@@ -91,6 +94,10 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
         mMusicDispatcher = MusicDispatcher.newInstance(mContext);
         mMusicDispatcher.setOnMusicListItemSelectedListener(this);
         mMusicDispatcher.setOnFoundLastPlayedMusicListener(this);
+
+        /** 初始化广播接收者 */
+        mHeadsetOffBroadcast = new HeadsetOffBroadcast();
+        registerHeadsetBroadcast(mHeadsetOffBroadcast);
     }
 
     /** 获取上次应用结束后保存的进度. */
@@ -150,7 +157,6 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             mCurrentMusicProgress = progress;
             mCurrentPlayerState = PLAYER_STATE_PAUSE;
             updateUi();
-            Log.w(TAG, "onPause: ");
         }
 
         @Override
@@ -174,6 +180,12 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
 
         @Override
         public void onServiceStop() {
+            Log.w(TAG, "onServiceStop: " );
+
+            mContext.unbindService(mControllerServiceConnection);
+            // 卸载广播
+            unregisterHeadsetBroadcast(mHeadsetOffBroadcast);
+
             mMusicDispatcher.saveMusic();
         }
 
@@ -183,6 +195,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             if (mOnPlayerStateChangedListener != null) {
                 mOnPlayerStateChangedListener.onComplete();
             }
+
             //====== 这里未来要准备一下, 根据不同的播放模式(随机播放, 列表顺序播放等)========
             next();
         }
@@ -209,10 +222,11 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             Toaster.toast(mContext, "没有歌曲");
             return;
         }
+
         try {
             mIControll.prepare(mCurrentMusicBean.getPath());
         } catch (IOException e) {
-            Toaster.toast(mContext, "歌曲:\""+mCurrentMusicBean.getMusicName()+"\"丢失");
+            Toaster.toastLong(mContext, "歌曲:\"" + mCurrentMusicBean.getMusicName() + "\"丢失. 请尝试重新扫描本地歌曲");
             next();
         }
         Log.w(TAG, "jumpTo: ");
@@ -232,6 +246,34 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             }
         }
         Log.w(TAG, "play: mCurrentPlayerState: " + mCurrentPlayerState);
+    }
+
+    /** UI层不需要调用该方法,这里专为广播接收者提供 */
+    public void specialPlay() {
+        if (mCurrentPlayerState == PLAYER_STATE_PAUSE) {
+            mIControll.resume();
+        }
+    }
+
+    /** UI层不需要调用该方法,这里专为广播接收者提供 */
+    public void specialPause() {
+        if (mCurrentPlayerState == PLAYER_STATE_PLAYING && mIControll != null) {
+            mIControll.pause();
+        }
+    }
+
+    private void registerHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
+        if (broadcastReceiver == null) return;
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_HEADSET_PLUG);
+        mContext.registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+    private void unregisterHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
+        if (broadcastReceiver == null) return;
+
+        mContext.unregisterReceiver(broadcastReceiver);
     }
 
     /**

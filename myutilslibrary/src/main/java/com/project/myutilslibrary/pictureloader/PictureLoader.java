@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
@@ -115,7 +116,7 @@ public class PictureLoader {
         }
     }*/
 
-    public void setCacheBitmapFromMp3Idv3(final Handler handler, final String picPath, final ImageView imageView, int imageViewWidth, int imageViewHeight) {
+    public void setCacheBitmapFromMp3Idv3(final Handler handler, final String picPath, final View imageView, int imageViewWidth, int imageViewHeight) {
         if (picPath == null) {
             return;
         }
@@ -147,19 +148,19 @@ public class PictureLoader {
         }
     }
 
-    private void getCacheBitmap(Handler handler, String picPath, ImageView imageView, int imageViewWidth, int imageViewHeight) {
+    private void getCacheBitmap(Handler handler, String picPath, View imageView, int imageViewWidth, int imageViewHeight) {
         PictureAsyncTask pictureAsyncTask = new PictureAsyncTask(handler, picPath, imageView, imageViewWidth, imageViewHeight);
         pictureAsyncTask.executeOnExecutor(PictureAsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     class PictureAsyncTask extends AsyncTask<Integer, Void, Bitmap> {
         String mPicPath;
-        ImageView mImageView;
+        View mImageView;
         private int mMeasuredWidth;
         private int mMeasuredHeight;
         Handler mHandler;
 
-        PictureAsyncTask(Handler handler, String picPath, ImageView imageView, int width, int height) {
+        PictureAsyncTask(Handler handler, String picPath, View imageView, int width, int height) {
             mHandler = handler;
             mPicPath = picPath;
             mImageView = imageView;

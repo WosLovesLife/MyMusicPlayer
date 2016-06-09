@@ -20,7 +20,6 @@ import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by zhangH on 2016/5/17.
@@ -41,7 +40,7 @@ public class MusicDispatcher {
     private static ArrayList<String> sMusicIndexArray;
 
     /** 当前的索引 = loopIndex % 数据集合.size() */
-    private int mCurrentIndex;
+    private int mCurrentIndex = -1;
     private boolean mIsSearching;
 
     private MusicDispatcher(Context context) {
@@ -147,23 +146,26 @@ public class MusicDispatcher {
 
     /** 刷新歌曲列表内容 ,重新扫描SD卡并更新到数据库 */
     public void scanSdcardMusics() {
-        if (!mIsSearching) {
-            mIsSearching = true;
+        if (mIsSearching) {
+            Toaster.toastLong(mContext, "扫描中，请稍后...");
+            return;
+        }
 
-            long lastUpdatedTime = SharedPreferenceTool.getLong(mContext, Constants.KEY_LAST_DATABASE_UPDATED_TIME, 0L);
-            long currentTime = System.currentTimeMillis();
+        mIsSearching = true;
 
-            Log.w(TAG, "currentTime: " + currentTime + "; lastUpdatedTime: " + lastUpdatedTime);
-            Log.w(TAG, "check4updateDatabase: 准备扫描SD卡");
+        long lastUpdatedTime = SharedPreferenceTool.getLong(mContext, Constants.KEY_LAST_DATABASE_UPDATED_TIME, 0L);
+        long currentTime = System.currentTimeMillis();
 
-            if (SdcardEnableUtils.isEnable()) {
-                Toaster.toastLong(mContext, "正在扫描音乐,请稍候...");
-                searchMusicFromSdcard();
-                SharedPreferenceTool.saveLong(mContext, Constants.KEY_LAST_DATABASE_UPDATED_TIME, lastUpdatedTime);
-            } else {
-                Toaster.toast(mContext, "检测外部存储状态异常!");
-                mIsSearching = false;
-            }
+        Log.w(TAG, "currentTime: " + currentTime + "; lastUpdatedTime: " + lastUpdatedTime);
+        Log.w(TAG, "check4updateDatabase: 准备扫描SD卡");
+
+        if (SdcardEnableUtils.isEnable()) {
+            Toaster.toastLong(mContext, "正在扫描音乐,请稍候...");
+            searchMusicFromSdcard();
+            SharedPreferenceTool.saveLong(mContext, Constants.KEY_LAST_DATABASE_UPDATED_TIME, lastUpdatedTime);
+        } else {
+            Toaster.toast(mContext, "检测外部存储状态异常!");
+            mIsSearching = false;
         }
 
     }
@@ -248,6 +250,7 @@ public class MusicDispatcher {
         @Override
         protected void onPostExecute(ArrayList<MusicBean> musicBeansArray) {
             refreshMusicArray(musicBeansArray, mTempIndexArray);
+
             mIsSearching = false;
         }
     }
@@ -289,8 +292,10 @@ public class MusicDispatcher {
                 mOnMusicListItemSelectedListener.OnMusicListItemSelected(null);
             }
 
-            mDataChangedListenerList.onItemChanged(mCurrentIndex);
-            Log.w(TAG, "informPlay: mDataChangedListenerList.onItemChanged(mCurrentIndex): "+ mCurrentIndex );
+            if (mDataChangedListenerList != null) {
+                mDataChangedListenerList.onItemChanged(mCurrentIndex);
+            }
+            Log.w(TAG, "informPlay: mDataChangedListenerList.onItemChanged(mCurrentIndex): " + mCurrentIndex);
 
             saveMusic();
         } else {

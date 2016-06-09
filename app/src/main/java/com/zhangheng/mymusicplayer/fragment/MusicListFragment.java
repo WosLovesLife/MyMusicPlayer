@@ -1,4 +1,4 @@
-package com.zhangheng.mymusicplayer.ui;
+package com.zhangheng.mymusicplayer.fragment;
 
 import android.app.Fragment;
 import android.os.Bundle;

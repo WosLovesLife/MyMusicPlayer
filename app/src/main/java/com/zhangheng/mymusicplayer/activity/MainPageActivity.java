@@ -2,15 +2,17 @@ package com.zhangheng.mymusicplayer.activity;
 
 import android.app.Fragment;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
+import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
+import android.text.format.DateFormat;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,9 +21,11 @@ import android.widget.LinearLayout;
 
 import com.project.myutilslibrary.Toaster;
 import com.project.myutilslibrary.wrapper_picture.BlurUtils;
-import com.project.myutilslibrary.wrapper_picture.FastBlur;
+import com.zhangheng.mymusicplayer.MusicApp;
 import com.zhangheng.mymusicplayer.R;
-import com.zhangheng.mymusicplayer.ui.MainPageFragment;
+import com.zhangheng.mymusicplayer.fragment.MainPageFragment;
+import com.zhangheng.mymusicplayer.fragment.OffTimerDialogFragment;
+import com.zhangheng.mymusicplayer.listener.OnOffTimerListener;
 
 import java.lang.reflect.Field;
 
@@ -31,27 +35,26 @@ import java.lang.reflect.Field;
 public class MainPageActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = "MainPageActivity";
+    private static final String ARG_IS_OFF_TIMER = "isOffTimer";
+
     private LinearLayout mPlayerBg;
 
+    OnOffTimerListener mOffTimerListener;
+
     @Override
-    protected int initView() {
+    protected int inflateView() {
         return R.layout.drawer_main;
     }
 
     @Override
-    protected void initComponentView() {
+    protected void bindToolbarAndDrawer(Toolbar toolbar) {
+        super.bindToolbarAndDrawer(toolbar);
 
-        /** 加载Drawer对象,用于Toolbar确定和Drawer的位置关系 */
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-
-        /** 加载Toolbar,设置为应用的Actionb */
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
             sinkStatusBar(toolbar);
         }
-
-        setSupportActionBar(toolbar);
 
         /** 设置Drawer和Toolbar的开启关系 */
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -65,9 +68,48 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        if (((MusicApp) getApplication()).isOffTimer()) {
+            updateOffTimer(navigationView.getMenu().findItem(R.id.nav_off_timer));
+        }
+
         mPlayerBg = (LinearLayout) findViewById(R.id.playerMainPageBg);
     }
 
+    @Override
+    protected void initView() {
+        super.initView();
+
+        AppBarLayout appBar = (AppBarLayout) findViewById(R.id.app_bar_layout);
+
+        if (appBar == null) return;
+
+        /** 设置Toolbar的背景颜色 */
+        appBar.setBackground(getResources().getDrawable(R.drawable.shape_toolbar_bg));
+        appBar.setTargetElevation(0);
+    }
+
+    /** 设置定时停止播放的状态监听器,实时显示倒计时 */
+    private void updateOffTimer(final MenuItem item) {
+        mOffTimerListener = new OnOffTimerListener() {
+            @Override
+            public void onOffTimer(long timerDate) {
+                if (timerDate > DateUtils.HOUR_IN_MILLIS) {
+                    String date = DateFormat.format("hh:mm:ss", timerDate).toString();
+                    Log.w(TAG, "onOffTimer: date: " + date);
+                    item.setTitle(date + " 后停止");
+                } else if (timerDate > DateUtils.MINUTE_IN_MILLIS) {
+                    String date = DateFormat.format("mm:ss", timerDate).toString();
+                    Log.w(TAG, "onOffTimer: date:" + date);
+                    item.setTitle(date + " 后停止");
+                } else {
+                    item.setTitle(timerDate / DateUtils.SECOND_IN_MILLIS + "s 后停止");
+                }
+            }
+        };
+        ((MusicApp) getApplication()).setOnOffTimerListener(mOffTimerListener);
+    }
+
+    /** 设置沉浸式状态栏 */
     private void sinkStatusBar(Toolbar toolbar) {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
 
@@ -104,7 +146,7 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
 
     /** Drawer中的NavigationView的item的选项的事件触发 */
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_camera:
                 Toaster.toast(getApplicationContext(), "nav_camera");
@@ -121,21 +163,29 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
             case R.id.nav_share:
                 Toaster.toast(getApplicationContext(), "nav_share");
                 break;
-            case R.id.nav_send:
-                Toaster.toast(getApplicationContext(), "nav_send");
-                break;
+            case R.id.nav_off_timer:
+                updateOffTimer(item);
+
+                OffTimerDialogFragment.newInstance(mOffTimerListener).show(getSupportFragmentManager(), "OffTimer");
+                return true;
         }
         return false;
     }
 
     @Override
-    protected Fragment initComponentFragment() {
+    protected void onDestroy() {
+        super.onDestroy();
+        mOffTimerListener = null;
+    }
+
+    @Override
+    protected Fragment initFragment() {
         return new MainPageFragment();
     }
 
     public void setPlayerBg(Bitmap background) {
         if (background != null) {
-            BitmapDrawable drawable = BlurUtils.makePictureBlur(getApplicationContext(), background, mPlayerBg, 1, 100);
+            BitmapDrawable drawable = BlurUtils.makePictureBlur(getApplicationContext(), background, mPlayerBg, 2, 30);
             mPlayerBg.setBackground(drawable);
         } else {
             mPlayerBg.setBackgroundResource(R.drawable.playpage_background);

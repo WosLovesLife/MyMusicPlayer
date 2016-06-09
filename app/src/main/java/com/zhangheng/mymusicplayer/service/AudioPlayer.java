@@ -24,7 +24,6 @@ public class AudioPlayer extends Service {
     private OnMediaPlayerStateChangedListener mOnMediaPlayerStateChangedListener;
 
     private MediaPlayer mMediaPlayer;
-//    private Handler mHandler;
 
     @Override
     public void onCreate() {
@@ -158,7 +157,7 @@ public class AudioPlayer extends Service {
     }
 
     private void startRefreshProgress() {
-        sHandler.sendEmptyMessageDelayed(0, 500);
+        sHandler.sendEmptyMessageDelayed(0, 1000);
     }
 
     private void stopRefreshProgress() {

@@ -5,9 +5,10 @@
     <com.project.myutilslibrary.view.quickindex.QuickBarView
         android:id="@+id/quickBar"
         android:layout_width="28dp"
+        android:visibility="invisible"
         android:layout_height="match_parent"
         android:layout_gravity="right"
-        android:background="#b8d4c5" />
+        android:background="#fffcfc" />
 
     <TextView
         android:id="@+id/currentWord"

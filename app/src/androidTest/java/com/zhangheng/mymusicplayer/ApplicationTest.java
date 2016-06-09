@@ -9,12 +9,12 @@ import android.os.IBinder;
 import android.test.ApplicationTestCase;
 import android.util.Log;
 
+import com.project.myutilslibrary.Logger;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.engine.MusicDatabaseEngine;
 import com.zhangheng.mymusicplayer.engine.MusicDispatcher;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
-import com.zhangheng.mymusicplayer.utils.Logger;
 
 import java.util.ArrayList;
 

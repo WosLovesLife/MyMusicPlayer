@@ -9,4 +9,9 @@ public class Dp2Px {
     public static int toPX(Context context, int dp) {
         return (int) (context.getResources().getDisplayMetrics().density * dp);
     }
+
+
+    public static float toPX(Context context, float dp) {
+        return context.getResources().getDisplayMetrics().density * dp;
+    }
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:scrollbars="none"
+    android:layout_height="120dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/off_timer_5"
+            style="@style/clickableTextListItem"
+            android:text="5分钟"/>
+
+        <TextView
+            android:id="@+id/off_timer_10"
+            style="@style/clickableTextListItem"
+            android:text="10分钟"/>
+
+        <TextView
+            android:id="@+id/off_timer_15"
+            style="@style/clickableTextListItem"
+            android:text="15分钟"/>
+
+        <TextView
+            android:id="@+id/off_timer_20"
+            style="@style/clickableTextListItem"
+            android:text="20分钟"/>
+
+        <TextView
+            android:id="@+id/off_timer_30"
+            style="@style/clickableTextListItem"
+            android:text="30分钟"/>
+
+        <TextView
+            android:id="@+id/off_timer_45"
+            style="@style/clickableTextListItem"
+            android:text="45分钟"/>
+
+        <TextView
+            android:id="@+id/off_timer_60"
+            style="@style/clickableTextListItem"
+            android:text="1小时"/>
+
+        <TextView
+            android:id="@+id/off_timer_120"
+            style="@style/clickableTextListItem"
+            android:text="2小时"/>
+    </LinearLayout>
+</ScrollView>

@@ -22,7 +22,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     private static final String TAG = "RecyclerViewAdapter";
 
     private ArrayList<MusicBean> mMusicBeanArray;
-    private int mPlaying;
+    private int mPlaying ;
     OnItemClickListener mOnItemClickListener;
 
     public interface OnItemClickListener {

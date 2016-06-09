@@ -1,17 +1,18 @@
-package com.zhangheng.mymusicplayer.ui;
+package com.zhangheng.mymusicplayer.fragment;
 
 import android.app.Fragment;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.text.format.DateFormat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -27,7 +28,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.project.myutilslibrary.pictureloader.PictureLoader;
-import com.project.myutilslibrary.wrapper_picture.FastBlur;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.activity.MusicListActivity;
@@ -65,7 +65,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     private TextView mDuration_tv;
 
     /** 专辑图片ImageView */
-    private ImageView mAlbumPicture;
+    private CardView mAlbumPicture;
     private int mAlbumPictureSize;
 
     @Override
@@ -86,7 +86,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         mDuration_tv = (TextView) v.findViewById(R.id.duration_TextView);
         mProgress_tv = (TextView) v.findViewById(R.id.currentProgress_TextView);
 
-        mAlbumPicture = (ImageView) v.findViewById(R.id.albumPicture);
+        mAlbumPicture = (CardView) v.findViewById(R.id.albumPicture);
 
         return v;
     }
@@ -114,40 +114,48 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mHandler!= null){
+        if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;
         }
     }
 
     private void initAlbumPictureSize() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int widthPixels = displayMetrics.widthPixels;
+        int heightPixels = displayMetrics.heightPixels / 2;
 
-//        DisplayMetrics displayMetrics = new DisplayMetrics();
-//        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-//        int widthPixels = displayMetrics.widthPixels;
-//
-//        ViewGroup.LayoutParams layoutParams = mAlbumPicture.getLayoutParams();
-//        layoutParams.height = widthPixels;
-//        layoutParams.width = widthPixels;
-//        mAlbumPicture.setLayoutParams(layoutParams);
-        int measuredWidth = mAlbumPicture.getMeasuredWidth();
-        int measuredHeight = mAlbumPicture.getMeasuredHeight();
-        int reference;
-        if (measuredWidth > measuredHeight) {
-            reference = measuredHeight;
+        int size = 0;
+        if (widthPixels < heightPixels) {
+            size = widthPixels;
         } else {
-            reference = measuredWidth;
+            size = heightPixels;
         }
 
-        int margin = (int) (reference * 0.15 + 0.5);
-        mAlbumPictureSize = reference - margin;
+        ViewGroup.LayoutParams layoutParams = mAlbumPicture.getLayoutParams();
+        layoutParams.height = (int) (size * 0.8f);
+        layoutParams.width = (int) (size * 0.8f);
+        mAlbumPicture.setLayoutParams(layoutParams);
 
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mAlbumPicture.getLayoutParams();
-        params.height = mAlbumPictureSize;
-        params.width = mAlbumPictureSize;
-        params.setMargins(margin,margin,margin,0);
-
-        mAlbumPicture.setLayoutParams(params);
+//        int measuredWidth = mAlbumPicture.getMeasuredWidth();
+//        int measuredHeight = mAlbumPicture.getMeasuredHeight();
+//        int reference;
+//        if (measuredWidth > measuredHeight) {
+//            reference = measuredHeight;
+//        } else {
+//            reference = measuredWidth;
+//        }
+//
+//        int margin = (int) (reference * 0.15 + 0.5);
+//        mAlbumPictureSize = reference - margin;
+//
+//        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mAlbumPicture.getLayoutParams();
+//        params.height = mAlbumPictureSize;
+//        params.width = mAlbumPictureSize;
+//        params.setMargins(margin, margin, margin, 0);
+//
+//        mAlbumPicture.setLayoutParams(params);
     }
 
     private void setViewFunction() {
@@ -198,12 +206,12 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     }
     ///////////== 关于ActionBar的方法end==/////////////
 
-    public Handler mHandler = new Handler(){
+    public Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            switch (msg.what){
-                case 0: // 给北京图片
+            switch (msg.what) {
+                case 0: // 给获取处理完的背景图片
                     setPlayerSkin((Bitmap) msg.obj);
                     break;
             }
@@ -211,10 +219,15 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     };
 
     private void setPlayerSkin(Bitmap bitmap) {
-        mAlbumPicture.setImageBitmap(bitmap);
-
         MainPageActivity activity = (MainPageActivity) getActivity();
-        activity.setPlayerBg(bitmap);
+        if (bitmap != null) {
+            mAlbumPicture.setBackgroundDrawable(new BitmapDrawable(bitmap));
+            activity.setPlayerBg(bitmap);
+        } else {
+            mAlbumPicture.setBackgroundResource(R.drawable.app_widget_default);
+            activity.setPlayerBg(BitmapFactory.decodeResource(getResources(), R.drawable.local_upgrade_success_bg));
+        }
+
     }
 
     ///////////==注册Controller的监听接口start==/////////////
@@ -224,11 +237,13 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         public void onPlayStateChanged(boolean isPlaying, int duration, int progress, MusicBean musicBean) {
             AppCompatActivity a = (AppCompatActivity) getActivity();
             android.support.v7.app.ActionBar supportActionBar = a.getSupportActionBar();
-            supportActionBar.setTitle(musicBean.getMusicName());
-            supportActionBar.setSubtitle(musicBean.getSinger());
+            if (supportActionBar != null) {
+                supportActionBar.setTitle(musicBean.getMusicName());
+                supportActionBar.setSubtitle(musicBean.getSinger());
+            }
 
             Log.w(TAG, "onPlayStateChanged: ");
-            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(mHandler,musicBean.getPath(), mAlbumPicture , mAlbumPictureSize, mAlbumPictureSize);
+            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(mHandler, musicBean.getPath(), mAlbumPicture, mAlbumPictureSize, mAlbumPictureSize);
 
 
             updateViewState(isPlaying, duration, progress);

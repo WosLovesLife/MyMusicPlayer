@@ -17,8 +17,11 @@
     <color name="colorActionBarBG">#4b7b94</color>
 
 
-    <color name="colorListItem">#30dfdbdb</color>
-    <color name="colorListItemRipple">#f7ff1e92</color>
+    <color name="colorListItem">#fffcfc</color>
+    <color name="colorListItemRipple">#e3ff29a6</color>
 
+    <color name="colorDarkSink">#0f151414</color>
     <color name="colorVague">#00000000</color>
+
+    <color name="colorSeekBarProgressBg">#daa9a2a2</color>
 </resources>

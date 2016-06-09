@@ -2,12 +2,12 @@ package com.zhangheng.mymusicplayer.activity;
 
 import android.app.Fragment;
 
-import com.zhangheng.mymusicplayer.ui.SplashFragment;
+import com.zhangheng.mymusicplayer.fragment.SplashFragment;
 
 public class SplashActivity extends BaseActivity {
 
     @Override
-    protected Fragment initComponentFragment() {
+    protected Fragment initFragment() {
         return new SplashFragment();
     }
 }
