@@ -65,7 +65,8 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         if (fragment == null) {
             fragment = initFragment();
-            fm.beginTransaction().add(R.id.fragment_container, fragment).commit();
+            if (fragment != null)
+                fm.beginTransaction().add(R.id.fragment_container, fragment).commit();
         }
     }
 

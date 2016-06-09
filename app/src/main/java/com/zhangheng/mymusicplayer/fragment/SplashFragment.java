@@ -25,39 +25,6 @@ public class SplashFragment extends Fragment{
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_splash, container, false);
-//        mHorse = (ImageView) view.findViewById(R.id.splashHorse_ImageView);
-//        runAnimRotate(mHorse);
         return view;
     }
-
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        enterMainPage();
-    }
-
-    private void runAnimRotate(View view) {
-        Animation rotate = AnimationUtils.loadAnimation(getActivity(), R.anim.rotate_splash_horse);
-        rotate.setDuration(1314);
-        rotate.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {}
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                enterMainPage();
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-        });
-        view.startAnimation(rotate);
-    }
-
-    private void enterMainPage() {
-        Intent i = new Intent(getActivity(),MainPageActivity.class);
-        startActivity(i);
-        getActivity().finish();
-    }
-
 }

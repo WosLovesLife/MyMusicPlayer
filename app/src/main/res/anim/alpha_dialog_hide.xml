@@ -3,5 +3,12 @@
      android:duration="320">
     <alpha
         android:fromAlpha="1.0"
-        android:toAlpha="0.0"/>
+        android:toAlpha="0.6"/>
+    <scale
+        android:fromXScale="100%"
+        android:fromYScale="100%"
+        android:pivotX="50%p"
+        android:pivotY="50%p"
+        android:toXScale="60%"
+        android:toYScale="60%"/>
 </set>

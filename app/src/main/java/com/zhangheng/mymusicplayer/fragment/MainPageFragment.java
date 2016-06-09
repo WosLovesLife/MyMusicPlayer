@@ -66,6 +66,10 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 
     /** 专辑图片ImageView */
     private CardView mAlbumPicture;
+
+    /** 监听播放状态 */
+    private MainPagePlayerStateChangedListener mMainPagePlayerStateChangedListener;
+
     private int mAlbumPictureSize;
 
     @Override
@@ -95,48 +99,59 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+        /** 获取控制器 */
         mController = Controller.newInstance(getActivity());
-        mController.setOnPlayerStateChangedListener(new MainPagePlayerStateChangedListener());
+
+        /** 监听歌曲信息和播放状态 */
+        mMainPagePlayerStateChangedListener = new MainPagePlayerStateChangedListener();
+        mController.setOnPlayerStateChangedListener(mMainPagePlayerStateChangedListener);
+
         setViewFunction();
 
-        mAlbumPicture.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                mAlbumPicture.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                initAlbumPictureSize();
-
-                return true;
-            }
-        });
+        initAlbumPictureSize();
     }
 
+    /** 停止监听,节省资源 */
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        if (mMainPagePlayerStateChangedListener != null){
+            mMainPagePlayerStateChangedListener = null;
+        }
+
         if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;
         }
     }
 
+    /** 初始化专辑图片的ImageView尺寸 */
     private void initAlbumPictureSize() {
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int widthPixels = displayMetrics.widthPixels;
-        int heightPixels = displayMetrics.heightPixels / 2;
+        mAlbumPicture.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                mAlbumPicture.getViewTreeObserver().removeOnPreDrawListener(this);
 
-        int size = 0;
-        if (widthPixels < heightPixels) {
-            size = widthPixels;
-        } else {
-            size = heightPixels;
-        }
+                DisplayMetrics displayMetrics = new DisplayMetrics();
+                getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                int widthPixels = displayMetrics.widthPixels;
+                int heightPixels = displayMetrics.heightPixels / 2;
 
-        ViewGroup.LayoutParams layoutParams = mAlbumPicture.getLayoutParams();
-        layoutParams.height = (int) (size * 0.8f);
-        layoutParams.width = (int) (size * 0.8f);
-        mAlbumPicture.setLayoutParams(layoutParams);
+                if (widthPixels < heightPixels) {
+                    mAlbumPictureSize = (int) (widthPixels * 0.8f);
+                } else {
+                    mAlbumPictureSize = (int) (heightPixels * 0.8f);
+                }
+
+                ViewGroup.LayoutParams layoutParams = mAlbumPicture.getLayoutParams();
+                layoutParams.height = mAlbumPictureSize;
+                layoutParams.width = mAlbumPictureSize;
+                mAlbumPicture.setLayoutParams(layoutParams);
+
+                return true;
+            }
+        });
 
 //        int measuredWidth = mAlbumPicture.getMeasuredWidth();
 //        int measuredHeight = mAlbumPicture.getMeasuredHeight();
