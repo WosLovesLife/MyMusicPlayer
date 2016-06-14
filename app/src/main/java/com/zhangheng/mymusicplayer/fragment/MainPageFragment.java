@@ -6,8 +6,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
@@ -21,9 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -37,7 +33,10 @@ import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
 
 /**
- * Created by zhangH on 2016/4/30.
+ * Created by WosLovesLife on 2016/4/30.
+ * 播放页面的主页面
+ * 和Controller沟通 通过在此页面所做的控制,通过Controller做逻辑处理
+ * Controller通过回调方法将播放状态返回给本类更新UI
  */
 public class MainPageFragment extends Fragment implements View.OnClickListener {
 
@@ -116,14 +115,14 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     public void onDestroy() {
         super.onDestroy();
 
-        if (mMainPagePlayerStateChangedListener != null){
+        if (mMainPagePlayerStateChangedListener != null) {
             mMainPagePlayerStateChangedListener = null;
         }
 
-        if (mHandler != null) {
-            mHandler.removeCallbacksAndMessages(null);
-            mHandler = null;
-        }
+//        if (mHandler != null) {
+//            mHandler.removeCallbacksAndMessages(null);
+//            mHandler = null;
+//        }
     }
 
     /** 初始化专辑图片的ImageView尺寸 */
@@ -221,17 +220,17 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     }
     ///////////== 关于ActionBar的方法end==/////////////
 
-    public Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            switch (msg.what) {
-                case 0: // 给获取处理完的背景图片
-                    setPlayerSkin((Bitmap) msg.obj);
-                    break;
-            }
-        }
-    };
+//    public Handler mHandler = new Handler() {
+//        @Override
+//        public void handleMessage(Message msg) {
+//            super.handleMessage(msg);
+//            switch (msg.what) {
+//                case 0: // 给获取处理完的背景图片
+//                    setPlayerSkin((Bitmap) msg.obj);
+//                    break;
+//            }
+//        }
+//    };
 
     private void setPlayerSkin(Bitmap bitmap) {
         MainPageActivity activity = (MainPageActivity) getActivity();
@@ -258,8 +257,12 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
             }
 
             Log.w(TAG, "onPlayStateChanged: ");
-            PictureLoader.newInstance(getActivity()).setCacheBitmapFromMp3Idv3(mHandler, musicBean.getPath(), mAlbumPicture, mAlbumPictureSize, mAlbumPictureSize);
-
+            PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(new PictureLoader.OnPictureLoadHandleListener() {
+                @Override
+                public void onPictureLoadComplete(Bitmap bitmap) {
+                    setPlayerSkin(bitmap);
+                }
+            }, musicBean.getPath(), mAlbumPicture, mAlbumPictureSize, mAlbumPictureSize);
 
             updateViewState(isPlaying, duration, progress);
         }
@@ -284,12 +287,12 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
             mProgress_sb.setMax(maxProgress);
             mProgress_sb.setProgress(currentProgress);
             String dur = (String) DateFormat.format("mm:ss", maxProgress);
-            Log.w(TAG, "updateViewState: dur: " + dur);
+//            Log.w(TAG, "updateViewState: dur: " + dur);
             mDuration_tv.setText(dur);
             String pro = (String) DateFormat.format("mm:ss", currentProgress);
-            Log.w(TAG, "updateViewState: pro: " + pro);
+//            Log.w(TAG, "updateViewState: pro: " + pro);
             mProgress_tv.setText(pro);
-            Log.w(TAG, "updateViewState: max: " + mProgress_sb.getMax() + "; progress: " + mProgress_sb.getProgress());
+//            Log.w(TAG, "updateViewState: max: " + mProgress_sb.getMax() + "; progress: " + mProgress_sb.getProgress());
         }
     }
     ///////////==注册Controller的监听接口end==/////////////
@@ -311,6 +314,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         public void onStopTrackingTouch(SeekBar seekBar) {
             mController.seekTo(seekBar.getProgress());
             isSeekBarHeld = false;
+
         }
     }
     /////////////==进度条SeekBar的事件监听end==////////////////

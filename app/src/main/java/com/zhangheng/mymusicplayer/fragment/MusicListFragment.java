@@ -78,6 +78,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
         mInitialsArray = musicIndexArray;
 
         mMusicListAdapter.setPlayedPosition(currentIndex);
+
         mLayoutManager.scrollToPosition(currentIndex-3);
     }
 
@@ -87,7 +88,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
     public void onItemChanged(int currentIndex) {
         mMusicListAdapter.setPlayedPosition(currentIndex);
 
-        mLayoutManager.scrollToPosition(currentIndex+5);
+//        mLayoutManager.scrollToPosition(currentIndex+5);
         Log.w("MusicList", "onItemChanged: "+(++a) );
     }
 
@@ -96,6 +97,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
     public void onIndexChanged(String index) {
         Log.w("MusicListFragment", "onIndexChanged: index: "+index );
         int i = mInitialsArray.indexOf(index);
+
         mLayoutManager.scrollToPosition(i);
     }
 

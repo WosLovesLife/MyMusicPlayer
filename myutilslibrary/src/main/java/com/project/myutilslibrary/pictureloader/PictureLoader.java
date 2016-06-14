@@ -1,10 +1,7 @@
 package com.project.myutilslibrary.pictureloader;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Message;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
@@ -20,20 +17,27 @@ public class PictureLoader {
 
     private static PictureLoader sPictureLoader;
     private final MemoryCache mMemoryCache;
-    private Activity mActivity;
+//    private Activity mActivity;
     private final MemoryCache mMemoryThumbnailCache;
 
-    private PictureLoader(Activity activity) {
-        mActivity = activity;
+//    private PictureLoader(Activity activity) {
+
+    public interface OnPictureLoadHandleListener{
+        void onPictureLoadComplete(Bitmap bitmap);
+    }
+
+    private PictureLoader() {
+//        mActivity = activity;
         mMemoryCache = new MemoryCache();
         mMemoryThumbnailCache = new MemoryCache();
     }
 
-    public static PictureLoader newInstance(Activity activity) {
+    public static PictureLoader newInstance() {
         if (sPictureLoader == null) {
             synchronized (PictureLoader.class) {
                 if (sPictureLoader == null) {
-                    sPictureLoader = new PictureLoader(activity);
+//                    sPictureLoader = new PictureLoader(activity);
+                    sPictureLoader = new PictureLoader();
                 }
             }
         }
@@ -116,16 +120,14 @@ public class PictureLoader {
         }
     }*/
 
-    public void setCacheBitmapFromMp3Idv3(final Handler handler, final String picPath, final View imageView, int imageViewWidth, int imageViewHeight) {
+    public void setCacheBitmapFromMp3Idv3(final OnPictureLoadHandleListener listener, final String picPath, final View imageView, int imageViewWidth, int imageViewHeight) {
         if (picPath == null) {
             return;
         }
 
         Bitmap cache = mMemoryCache.getCache(picPath);
         if (cache != null) {
-            Message message = handler.obtainMessage(0, cache);
-            handler.sendMessage(message);
-//            imageView.setImageBitmap(cache);
+            listener.onPictureLoadComplete(cache);
             return;
         }
 
@@ -136,20 +138,20 @@ public class PictureLoader {
                     public boolean onPreDraw() {
                         imageView.getViewTreeObserver().removeOnPreDrawListener(this);
 
-                        getCacheBitmap(handler, picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+                        getCacheBitmap(listener, picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
                         return true;
                     }
                 });
             } else {
-                getCacheBitmap(handler, picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+                getCacheBitmap(listener, picPath, imageView, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
             }
         } else {
-            getCacheBitmap(handler, picPath, imageView, imageViewWidth, imageViewHeight);
+            getCacheBitmap(listener, picPath, imageView, imageViewWidth, imageViewHeight);
         }
     }
 
-    private void getCacheBitmap(Handler handler, String picPath, View imageView, int imageViewWidth, int imageViewHeight) {
-        PictureAsyncTask pictureAsyncTask = new PictureAsyncTask(handler, picPath, imageView, imageViewWidth, imageViewHeight);
+    private void getCacheBitmap(OnPictureLoadHandleListener listener, String picPath, View imageView, int imageViewWidth, int imageViewHeight) {
+        PictureAsyncTask pictureAsyncTask = new PictureAsyncTask(listener, picPath, imageView, imageViewWidth, imageViewHeight);
         pictureAsyncTask.executeOnExecutor(PictureAsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -158,10 +160,10 @@ public class PictureLoader {
         View mImageView;
         private int mMeasuredWidth;
         private int mMeasuredHeight;
-        Handler mHandler;
+        OnPictureLoadHandleListener mListener;
 
-        PictureAsyncTask(Handler handler, String picPath, View imageView, int width, int height) {
-            mHandler = handler;
+        PictureAsyncTask(OnPictureLoadHandleListener listener, String picPath, View imageView, int width, int height) {
+            mListener = listener;
             mPicPath = picPath;
             mImageView = imageView;
             mMeasuredWidth = width;
@@ -190,9 +192,7 @@ public class PictureLoader {
         protected void onPostExecute(Bitmap cache) {
             super.onPostExecute(cache);
 
-//            mImageView.setImageBitmap(cache);
-            Message message = mHandler.obtainMessage(0, cache);
-            mHandler.sendMessage(message);
+            mListener.onPictureLoadComplete(cache);
 
             if (cache != null) {
                 mMemoryCache.saveCache(mPicPath, cache);

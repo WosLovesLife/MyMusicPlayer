@@ -9,7 +9,10 @@ import com.project.myutilslibrary.PinyinUtils;
 import com.project.myutilslibrary.SdcardEnableUtils;
 import com.project.myutilslibrary.SharedPreferenceTool;
 import com.project.myutilslibrary.Toaster;
+import com.project.myutilslibrary.mp3agic.ID3v2;
+import com.project.myutilslibrary.mp3agic.InvalidDataException;
 import com.project.myutilslibrary.mp3agic.Mp3File;
+import com.project.myutilslibrary.mp3agic.UnsupportedTagException;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.exception.PlayerException;
 import com.zhangheng.mymusicplayer.global.Constants;
@@ -18,6 +21,7 @@ import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
 import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -240,7 +244,7 @@ public class MusicDispatcher {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                            mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), 0));
+//                            mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), 0));
                         }
                     }
                 }
@@ -305,5 +309,21 @@ public class MusicDispatcher {
 
     public void saveMusic() {
         SharedPreferenceTool.saveInteger(mContext, Constants.KEY_LAST_SAVED_MUSIC, mCurrentIndex);
+    }
+
+    public void getLrc(){
+        MusicBean musicBean = sMusicBeanArray.get(mCurrentIndex);
+        try {
+            Mp3File mp3File =  new Mp3File(musicBean.getPath());
+            if (mp3File.hasId3v2Tag()){
+                ID3v2 id3v2Tag = mp3File.getId3v2Tag();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (UnsupportedTagException e) {
+            e.printStackTrace();
+        } catch (InvalidDataException e) {
+            e.printStackTrace();
+        }
     }
 }

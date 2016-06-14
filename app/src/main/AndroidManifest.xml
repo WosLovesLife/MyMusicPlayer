@@ -27,6 +27,7 @@
 
         <activity
             android:name=".activity.MainPageActivity"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait">
             <intent-filter>
                 <!--<action android:name="android.intent.action.MAIN"/>
@@ -46,7 +47,7 @@
                 android:value=".activity.MainPageActivity"/>
         </activity>
 
-        <service android:name=".service.AudioPlayer"/><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
+        <service android:name=".service.AudioPlayer" /><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
      App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
         <meta-data
             android:name="com.google.android.gms.version"

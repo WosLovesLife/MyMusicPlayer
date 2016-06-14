@@ -4,6 +4,8 @@ import android.app.Fragment;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -173,6 +175,8 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     protected void onDestroy() {
         super.onDestroy();
         mOffTimerListener = null;
+
+        Log.w(TAG, "onDestroy: " );
     }
 
     @Override
@@ -188,4 +192,62 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
             mPlayerBg.setBackgroundResource(R.drawable.playpage_background);
         }
     }
+
+
+
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.w(TAG, "onStop: " );
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.w(TAG, "onSaveInstanceState: " );
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Log.w(TAG, "onCreate: " );
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        super.onSaveInstanceState(outState, outPersistentState);
+
+        Log.w(TAG, "onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState): " );
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        Log.w(TAG, "onRestart: " );
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Log.w(TAG, "onStart: " );
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Log.w(TAG, "onResume: " );
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        Log.w(TAG, "onPause: " );
+    }
+
 }

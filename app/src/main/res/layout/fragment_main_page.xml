@@ -18,9 +18,10 @@
             android:layout_width="120dp"
             android:layout_height="120dp"
             android:layout_gravity="center"
+            android:outlineProvider="bounds"
+            app:cardElevation="4dp"
             android:layout_margin="8dp"
-            android:background="@drawable/app_widget_default"
-            app:cardCornerRadius="0dp">
+            android:background="@drawable/app_widget_default">
 
             <!--<ImageView
                 android:id="@+id/albumPicture"
@@ -68,6 +69,8 @@
                     android:layout_marginLeft="-5dp"
                     android:layout_marginRight="-5dp"
                     android:layout_weight="1"
+                    android:thumbTint="@android:color/white"
+                    android:progressBackgroundTint="@color/colorSeekBarProgressBg"
                     tools:progress="40"/>
 
                 <TextView

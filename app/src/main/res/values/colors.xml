@@ -13,7 +13,7 @@
     <color name="colorAccent">#FF4081</color>
     <color name="colorItemBG">#e2e4f2ec</color>
     <color name="colorItemText">#d9202021</color>
-    <color name="colorSeekBarTime">#d9e9e9ed</color>
+    <color name="colorSeekBarTime">#e9e9ed</color>
     <color name="colorActionBarBG">#4b7b94</color>
 
 
@@ -23,5 +23,5 @@
     <color name="colorDarkSink">#0f151414</color>
     <color name="colorVague">#00000000</color>
 
-    <color name="colorSeekBarProgressBg">#daa9a2a2</color>
+    <color name="colorSeekBarProgressBg">#c7c4c4</color>
 </resources>

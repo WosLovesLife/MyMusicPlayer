@@ -1,5 +1,7 @@
 package com.zhangheng.mymusicplayer.interfaces;
 
+import android.graphics.Bitmap;
+
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
 
 import java.io.IOException;
@@ -12,5 +14,6 @@ public interface IControll {
     void pause();
     void resume();
     void seekProgress(int progress);
+    void setRemoteViewInfo(CharSequence musicName, CharSequence singer, Bitmap album, boolean isPlaying);
     void setOnAudioPlayerCreateListener(OnMediaPlayerStateChangedListener onMediaPlayerStateChangedListener);
 }

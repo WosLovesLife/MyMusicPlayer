@@ -6,13 +6,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.project.myutilslibrary.Dp2Px;
 import com.project.myutilslibrary.ServiceStateUtils;
 import com.project.myutilslibrary.Toaster;
+import com.project.myutilslibrary.pictureloader.PictureLoader;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.broadcast.HeadsetOffBroadcast;
+import com.zhangheng.mymusicplayer.broadcast.RemoteViewControlBroadcast;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.listener.OnFoundLastPlayedMusicListener;
@@ -61,6 +65,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
     private MusicBean mCurrentMusicBean;
     private MusicDispatcher mMusicDispatcher;
     private HeadsetOffBroadcast mHeadsetOffBroadcast;
+    private RemoteViewControlBroadcast mRemoteViewControlBroadcast;
     //-- 沟通调度器的变量/常量-end --
 
     private Controller(Context context) {
@@ -98,6 +103,9 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
         /** 初始化广播接收者 */
         mHeadsetOffBroadcast = new HeadsetOffBroadcast();
         registerHeadsetBroadcast(mHeadsetOffBroadcast);
+
+        mRemoteViewControlBroadcast = new RemoteViewControlBroadcast();
+        registerRemoteViewBroadcast(mRemoteViewControlBroadcast);
     }
 
     /** 获取上次应用结束后保存的进度. */
@@ -147,8 +155,9 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             mCurrentMusicDuration = maxProgress;
             mCurrentMusicProgress = progress;
             mCurrentPlayerState = PLAYER_STATE_PLAYING;
+
             updateUi();
-            Log.w(TAG, "onResume: maxProgress: " + maxProgress);
+            updateRemoteView();
         }
 
         @Override
@@ -156,7 +165,9 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             mCurrentMusicDuration = maxProgress;
             mCurrentMusicProgress = progress;
             mCurrentPlayerState = PLAYER_STATE_PAUSE;
+
             updateUi();
+            updateRemoteView();
         }
 
         @Override
@@ -174,19 +185,26 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
          */
         @Override
         public void onPrepared() {
+
+            /* 通过play()方法开启播放 */
             mCurrentPlayerState = PLAYER_STATE_PAUSE;
             play();
+
+//            /* 更新通知栏 */
+//            updateRemoteView();
         }
 
         @Override
         public void onServiceStop() {
-            Log.w(TAG, "onServiceStop: " );
+            Log.w(TAG, "onServiceStop: ");
 
             mContext.unbindService(mControllerServiceConnection);
-            // 卸载广播
-            unregisterHeadsetBroadcast(mHeadsetOffBroadcast);
 
             mMusicDispatcher.saveMusic();
+
+            /* 卸载广播 */
+            unregisterBroadcast(mHeadsetOffBroadcast);
+            unregisterBroadcast(mRemoteViewControlBroadcast);
         }
 
         @Override
@@ -199,6 +217,24 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             //====== 这里未来要准备一下, 根据不同的播放模式(随机播放, 列表顺序播放等)========
             next();
         }
+    }
+
+    /** 通知AudioPlayer更新通知栏样式 */
+    private void updateRemoteView() {
+
+        Log.w(TAG, "updateRemoteView: ");
+        PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
+                new PictureLoader.OnPictureLoadHandleListener() {
+                    @Override
+                    public void onPictureLoadComplete(Bitmap bitmap) {
+                        mIControll.setRemoteViewInfo(
+                                mCurrentMusicBean.getMusicName(),
+                                mCurrentMusicBean.getSinger(),
+                                bitmap,
+                                mCurrentPlayerState == PLAYER_STATE_PLAYING);
+                    }
+                },
+                mCurrentMusicBean.getPath(), null, Dp2Px.toPX(mContext, 100), Dp2Px.toPX(mContext, 100));
     }
 
     /** 用户从歌曲列表中跳转了歌曲,有调度器将更新的MusicBean对象传递给本类,调用`To()方法进行播放准备 */
@@ -217,6 +253,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
 
     ////////////////////////////////////////////////////////////////////////////////////////////
 
+    /* 通知音乐服务播放歌曲,本方法执行完后会等待AudioPlayer177行的 onPrepared()方法的回调 */
     private void jumpTo() {
         if (mCurrentMusicBean == null) {
             Toaster.toast(mContext, "没有歌曲");
@@ -262,6 +299,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
         }
     }
 
+    /* 注册耳机拔出事件的广播接收 */
     private void registerHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
         if (broadcastReceiver == null) return;
 
@@ -270,16 +308,22 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
         mContext.registerReceiver(broadcastReceiver, intentFilter);
     }
 
-    private void unregisterHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
+    /* 注册通知栏按钮控制广播接收 */
+    private void registerRemoteViewBroadcast(RemoteViewControlBroadcast remoteViewControlBroadcast) {
+        if (remoteViewControlBroadcast == null) return;
+
+        IntentFilter intentFilter = RemoteViewControlBroadcast.getIntentFilter();
+        mContext.registerReceiver(remoteViewControlBroadcast, intentFilter);
+    }
+
+    /* 注销对于耳机拔出事件的广播接收 */
+    private void unregisterBroadcast(BroadcastReceiver broadcastReceiver) {
         if (broadcastReceiver == null) return;
 
         mContext.unregisterReceiver(broadcastReceiver);
     }
 
-    /**
-     * 跳转到上一首歌曲,如果跳转前处于播放状态,则跳转后播放,
-     * 如果跳转前未在播放,则跳转后也不播放
-     */
+    /* 跳转到上一首歌曲,如果跳转前处于播放状态,则跳转后播放,如果跳转前未在播放,则跳转后也不播放 */
     public void pre() {
         mMusicDispatcher.getPre();
         Log.w(TAG, "pre: mCurrentMusicIndex: ");
