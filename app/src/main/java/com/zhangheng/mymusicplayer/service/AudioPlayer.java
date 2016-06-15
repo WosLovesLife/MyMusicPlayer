@@ -26,6 +26,7 @@ import java.io.IOException;
 
 /**
  * Created by zhangH on 2016/4/30.
+ * 负责播放业务的实现, 将播放状态传递出去
  */
 public class AudioPlayer extends Service {
 

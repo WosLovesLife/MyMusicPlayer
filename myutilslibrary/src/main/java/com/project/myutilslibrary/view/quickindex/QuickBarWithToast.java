@@ -18,7 +18,7 @@ public class QuickBarWithToast extends FrameLayout implements QuickBarView.OnQui
 
     private TextView mCurrentWord;
     private boolean mIsQuickBarTouching;
-    private OnIndexChangedListener mOnIndexChangedListener;
+    public OnIndexChangedListener mOnIndexChangedListener;
     private QuickBarView mQuickBarView;
 
     private int mAttr_background;

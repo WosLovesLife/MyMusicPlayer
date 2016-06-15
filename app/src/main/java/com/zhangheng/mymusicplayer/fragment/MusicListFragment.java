@@ -79,7 +79,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
 
         mMusicListAdapter.setPlayedPosition(currentIndex);
 
-        mLayoutManager.scrollToPosition(currentIndex-3);
+        mRecyclerView.scrollToPosition(currentIndex-3);
     }
 
     int a ;
@@ -98,7 +98,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
         Log.w("MusicListFragment", "onIndexChanged: index: "+index );
         int i = mInitialsArray.indexOf(index);
 
-        mLayoutManager.scrollToPosition(i);
+        mRecyclerView.scrollToPosition(i);
     }
 
     /** 当用户点击某个条目时,通知调度者播放指定的歌曲 */

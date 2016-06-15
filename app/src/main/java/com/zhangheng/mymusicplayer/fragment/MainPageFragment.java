@@ -29,7 +29,6 @@ import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.activity.MusicListActivity;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.engine.Controller;
-import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
 
 /**
@@ -40,7 +39,7 @@ import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
  */
 public class MainPageFragment extends Fragment implements View.OnClickListener {
 
-    private static final String TAG = Constants.TAG;
+    private static final String TAG = "MainPageFragment";
 
     public static final int REQUEST_CODE_LIST_FRAGMENT = 0;
 
@@ -65,9 +64,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 
     /** 专辑图片ImageView */
     private CardView mAlbumPicture;
-
-    /** 监听播放状态 */
-    private MainPagePlayerStateChangedListener mMainPagePlayerStateChangedListener;
 
     private int mAlbumPictureSize;
 
@@ -102,8 +98,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         mController = Controller.newInstance(getActivity());
 
         /** 监听歌曲信息和播放状态 */
-        mMainPagePlayerStateChangedListener = new MainPagePlayerStateChangedListener();
-        mController.setOnPlayerStateChangedListener(mMainPagePlayerStateChangedListener);
+        mController.setOnPlayerStateChangedListener(new MainPagePlayerStateChangedListener());
 
         setViewFunction();
 
@@ -115,9 +110,9 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     public void onDestroy() {
         super.onDestroy();
 
-        if (mMainPagePlayerStateChangedListener != null) {
-            mMainPagePlayerStateChangedListener = null;
-        }
+        Log.w(TAG, "onDestroy: ");
+
+        mController.releaseOnPlayerStateChangedListener();
 
 //        if (mHandler != null) {
 //            mHandler.removeCallbacksAndMessages(null);
@@ -233,15 +228,15 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 //    };
 
     private void setPlayerSkin(Bitmap bitmap) {
+
         MainPageActivity activity = (MainPageActivity) getActivity();
         if (bitmap != null) {
             mAlbumPicture.setBackgroundDrawable(new BitmapDrawable(bitmap));
             activity.setPlayerBg(bitmap);
         } else {
             mAlbumPicture.setBackgroundResource(R.drawable.app_widget_default);
-            activity.setPlayerBg(BitmapFactory.decodeResource(getResources(), R.drawable.local_upgrade_success_bg));
+            activity.setPlayerBg(BitmapFactory.decodeResource(getResources(), R.drawable.fm_run_bg));
         }
-
     }
 
     ///////////==注册Controller的监听接口start==/////////////
@@ -250,6 +245,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         @Override
         public void onPlayStateChanged(boolean isPlaying, int duration, int progress, MusicBean musicBean) {
             AppCompatActivity a = (AppCompatActivity) getActivity();
+            if (a==null) return;
+
             android.support.v7.app.ActionBar supportActionBar = a.getSupportActionBar();
             if (supportActionBar != null) {
                 supportActionBar.setTitle(musicBean.getMusicName());

@@ -19,9 +19,7 @@ import com.zhangheng.mymusicplayer.broadcast.HeadsetOffBroadcast;
 import com.zhangheng.mymusicplayer.broadcast.RemoteViewControlBroadcast;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
-import com.zhangheng.mymusicplayer.listener.OnFoundLastPlayedMusicListener;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
-import com.zhangheng.mymusicplayer.listener.OnMusicListItemSelectedListener;
 import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
 
@@ -34,7 +32,7 @@ import java.io.IOException;
  * 通过调度器Dispatcher获取歌曲资源
  * Created by zhangH on 2016/4/30.
  */
-public class Controller implements OnMusicListItemSelectedListener, OnFoundLastPlayedMusicListener {
+public class Controller{
     private static final String TAG = Constants.TAG;
 
     /** 单例的实例,由newsInstance构造,不为null时返回 */
@@ -97,8 +95,6 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
 
         /** 保定和调度器的关联 */
         mMusicDispatcher = MusicDispatcher.newInstance(mContext);
-        mMusicDispatcher.setOnMusicListItemSelectedListener(this);
-        mMusicDispatcher.setOnFoundLastPlayedMusicListener(this);
 
         /** 初始化广播接收者 */
         mHeadsetOffBroadcast = new HeadsetOffBroadcast();
@@ -109,8 +105,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
     }
 
     /** 获取上次应用结束后保存的进度. */
-    @Override
-    public void onFoundLastPlayedMusic(MusicBean musicBean) {
+    public void setDefaultMusic(MusicBean musicBean) {
         if (musicBean != null) {
             mCurrentMusicBean = musicBean;
         }
@@ -189,9 +184,6 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             /* 通过play()方法开启播放 */
             mCurrentPlayerState = PLAYER_STATE_PAUSE;
             play();
-
-//            /* 更新通知栏 */
-//            updateRemoteView();
         }
 
         @Override
@@ -237,13 +229,6 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
                 mCurrentMusicBean.getPath(), null, Dp2Px.toPX(mContext, 100), Dp2Px.toPX(mContext, 100));
     }
 
-    /** 用户从歌曲列表中跳转了歌曲,有调度器将更新的MusicBean对象传递给本类,调用`To()方法进行播放准备 */
-    @Override
-    public void OnMusicListItemSelected(MusicBean musicBean) {
-        mCurrentMusicBean = musicBean;
-        jumpTo();
-    }
-
     /** UI层通过传递此回调接口, 当本类中的播放状态发生改变的时候,触发相应的回调方法. */
     public void setOnPlayerStateChangedListener(OnPlayerStateChangedListener onPlayerStateChangedListener) {
         mOnPlayerStateChangedListener = onPlayerStateChangedListener;
@@ -251,10 +236,15 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
         updateUi();
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
+    public void releaseOnPlayerStateChangedListener(){
+        mOnPlayerStateChangedListener = null;
+    }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////
     /* 通知音乐服务播放歌曲,本方法执行完后会等待AudioPlayer177行的 onPrepared()方法的回调 */
-    private void jumpTo() {
+    public void changeMusicTo(MusicBean musicBean) {
+        mCurrentMusicBean = musicBean;
+
         if (mCurrentMusicBean == null) {
             Toaster.toast(mContext, "没有歌曲");
             return;
@@ -277,7 +267,7 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
             mIControll.resume();
         } else {
             if (mCurrentMusicBean != null) {
-                jumpTo();
+                changeMusicTo(mCurrentMusicBean);
             } else {
                 mMusicDispatcher.getDefault();
             }
@@ -299,6 +289,33 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
         }
     }
 
+    /* 跳转到上一首歌曲,如果跳转前处于播放状态,则跳转后播放,如果跳转前未在播放,则跳转后也不播放 */
+    public void pre() {
+        mMusicDispatcher.getPre();
+        Log.w(TAG, "pre: mCurrentMusicIndex: ");
+    }
+
+    /**
+     * 跳转到下一首歌曲,如果跳转前处于播放状态,则跳转后播放,
+     * 如果跳转前未在播放,则跳转后也不播放
+     */
+    public void next() {
+        mMusicDispatcher.getNext();
+        Log.w(TAG, "next: ");
+    }
+
+    /** 调用此方法,跳转播放歌曲的进度 */
+    public void seekTo(int seekToProgress) {
+        Log.w(TAG, "seekTo: mCurrentPlayerState: " + mCurrentPlayerState);
+        if (mCurrentPlayerState != PLAYER_STATE_IDLE) {
+            mIControll.seekProgress(seekToProgress);
+        } else {
+            /* 如果歌曲处于不可播放状态而用户拖动了进度条,则按照完成播放处理,将进度置0 */
+            mOnPlayerStateChangedListener.onComplete();
+        }
+    }
+
+    /////// Broadcast-start //////
     /* 注册耳机拔出事件的广播接收 */
     private void registerHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
         if (broadcastReceiver == null) return;
@@ -322,30 +339,5 @@ public class Controller implements OnMusicListItemSelectedListener, OnFoundLastP
 
         mContext.unregisterReceiver(broadcastReceiver);
     }
-
-    /* 跳转到上一首歌曲,如果跳转前处于播放状态,则跳转后播放,如果跳转前未在播放,则跳转后也不播放 */
-    public void pre() {
-        mMusicDispatcher.getPre();
-        Log.w(TAG, "pre: mCurrentMusicIndex: ");
-    }
-
-    /**
-     * 跳转到下一首歌曲,如果跳转前处于播放状态,则跳转后播放,
-     * 如果跳转前未在播放,则跳转后也不播放
-     */
-    public void next() {
-        mMusicDispatcher.getNext();
-        Log.w(TAG, "next: ");
-    }
-
-    public void seekTo(int seekToProgress) {
-        Log.w(TAG, "seekTo: mCurrentPlayerState: " + mCurrentPlayerState);
-        if (mCurrentPlayerState != PLAYER_STATE_IDLE) {
-            mIControll.seekProgress(seekToProgress);
-        } else {
-            // 如果歌曲处于不可播放状态而用户拖动了进度条,则按照完成播放处理,将进度置0
-            mOnPlayerStateChangedListener.onComplete();
-        }
-        Log.w(TAG, "seekTo: seekToProgress: " + seekToProgress);
-    }
+    /////// Broadcast-end //////
 }
