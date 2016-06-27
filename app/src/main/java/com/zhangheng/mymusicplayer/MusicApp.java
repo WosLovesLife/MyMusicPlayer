@@ -5,73 +5,96 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.text.format.DateUtils;
+import android.util.Log;
 
-import com.project.myutilslibrary.ServiceStateUtils;
+import com.zhangheng.mymusicplayer.activity.MainPageActivity;
+import com.zhangheng.mymusicplayer.engine.Controller;
 import com.zhangheng.mymusicplayer.listener.OnOffTimerListener;
-import com.zhangheng.mymusicplayer.service.AudioPlayer;
 
 /**
  * Created by zhangH on 2016/6/7.
  */
 public class MusicApp extends Application {
+    public static final String TAG = "MusicApp";
 
     public static long sTotalDate;
 
     private static OnOffTimerListener sOffTimerListener;
 
     private Handler mHandler = new Handler() {
-        public static final String TAG = "MusicApp";
 
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case 0: // 定时关闭程序
                     sTotalDate -= DateUtils.SECOND_IN_MILLIS;
-                    if (sOffTimerListener != null) {
-                        sOffTimerListener.onOffTimer((sTotalDate));
-                    }
+
+                    Log.w(TAG, "handleMessage: " + sTotalDate);
+
+                    notifyListener();
                     timer();
                     break;
             }
         }
     };
 
-    public void setOnOffTimerListener(OnOffTimerListener offTimerListener){
+    /** 添加定时器监听器, 可以调用removeOnOffTimerListener()来移除该监听器 */
+    public void setOnOffTimerListener(OnOffTimerListener offTimerListener) {
         sOffTimerListener = offTimerListener;
     }
 
-    public void setOffTimer(long millis, OnOffTimerListener offTimerListener) {
-        sOffTimerListener = offTimerListener;
+    /** 移除定时器添加器 */
+    public void removeOnOffTimerListener() {
+        sOffTimerListener = null;
+    }
 
-        mHandler.removeCallbacksAndMessages(null);
+    /** 设置关闭播放器的定时器 */
+    public void setOffTimer(long millis, OnOffTimerListener offTimerListener) {
+
+        /* 移除原有的定时器,重新定时 */
+        cancelOffTimer();
+
+        setOnOffTimerListener(offTimerListener);
+
+        /* 延迟定时秒数后执行关闭本程序的操作 */
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mHandler.removeCallbacksAndMessages(null);
+                Log.w(TAG, "run: ");
+                cancelOffTimer();
 
-                if (ServiceStateUtils.isRunning(MusicApp.this, AudioPlayer.class)) {
-                    mHandler.removeCallbacksAndMessages(null);
-                    Intent i = new Intent(MusicApp.this, AudioPlayer.class);
-                    stopService(i);
-                    System.exit(0);
-                }
+                /* 退出所有Activity */
+                Intent intent2KillAllActivity = MainPageActivity.getIntent2KillAllActivity(getApplicationContext());
+                startActivity(intent2KillAllActivity);
+
+                /* 关闭播放服务 */
+                Controller.newInstance(MusicApp.this).stopAudioService();
             }
         }, millis);
 
         sTotalDate = millis;
 
+        notifyListener();
+
         mHandler.sendEmptyMessageDelayed(0, DateUtils.SECOND_IN_MILLIS);
+    }
+
+    private void notifyListener() {
+        if (sOffTimerListener != null) {
+            sOffTimerListener.onOffTimer((sTotalDate));
+        }
     }
 
     private void timer() {
         mHandler.sendEmptyMessageDelayed(0, DateUtils.SECOND_IN_MILLIS);
     }
 
-    public boolean isOffTimer(){
+    public boolean isOffTimer() {
         return sTotalDate != 0;
     }
 
     public void cancelOffTimer() {
+        removeOnOffTimerListener();
         mHandler.removeCallbacksAndMessages(null);
         sTotalDate = 0;
     }

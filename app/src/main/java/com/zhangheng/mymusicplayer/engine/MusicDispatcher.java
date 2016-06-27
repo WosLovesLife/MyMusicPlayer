@@ -9,6 +9,7 @@ import com.project.myutilslibrary.PinyinUtils;
 import com.project.myutilslibrary.SdcardEnableUtils;
 import com.project.myutilslibrary.SharedPreferenceTool;
 import com.project.myutilslibrary.Toaster;
+import com.project.myutilslibrary.mp3agic.ID3v1;
 import com.project.myutilslibrary.mp3agic.ID3v2;
 import com.project.myutilslibrary.mp3agic.InvalidDataException;
 import com.project.myutilslibrary.mp3agic.Mp3File;
@@ -61,7 +62,7 @@ public class MusicDispatcher {
 
     public void setOnMusicDispatchDataChangedListener(OnMusicDispatchDataChangedListener onMusicDispatchDataChangedListener) {
         mDataChangedListenerList = onMusicDispatchDataChangedListener;
-        onMusicDispatchDataChangedListener.onDispatchDataChanged(sMusicBeanArray, sMusicIndexArray, mCurrentIndex);
+        notifyDataSetChanged();
     }
 
     private void initData() {
@@ -194,48 +195,18 @@ public class MusicDispatcher {
         }
 
         private void scanSdcard(File dir) {
+            if (dir == null) return;
+
             File[] files = dir.listFiles();
-            if (files != null && files.length > 0) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        scanSdcard(file);
-                        Log.w(TAG, "scanSdcard: scanSdcard 执行了:" + (count++));
-                    } else {
-                        String filePath = file.getAbsolutePath();
-                        if (filePath.endsWith(".mp3")) {
-                            // 获取到文件名
-                            String unknownName = filePath.substring(filePath.lastIndexOf("/") + 1, filePath.lastIndexOf("."));
-                            Log.w(TAG, "scanSdcard: subString: " + unknownName);
-                            // 依照虾米音乐和网易云音乐的命名规范赋音乐名和歌手名
-                            int wyIndex = unknownName.indexOf("-");
-                            int xmIndex = unknownName.indexOf("_");
-                            String musicName;
-                            String singer = "未知";
-                            if (wyIndex != -1) {//网易云音乐的命名方式,左边歌手名,右边歌曲名
-                                musicName = unknownName.substring(wyIndex + 1).trim();
-                                singer = unknownName.substring(0, wyIndex).trim();
-                                Log.w(TAG, "scanSdcard: 网易歌曲: 歌名: " + musicName + "; 歌手: " + singer);
-                            } else if (xmIndex != -1) {//虾米音乐的命名方式,左边歌曲名,右边歌手名
-                                musicName = unknownName.substring(0, xmIndex).trim();
-                                singer = unknownName.substring(xmIndex + 1).trim();
-                                Log.w(TAG, "scanSdcard: 虾米歌曲: 歌名: " + musicName + "; 歌手: " + singer);
-                            } else {
-                                musicName = unknownName;
-                                Log.w(TAG, "scanSdcard: 未知歌曲: 歌名: " + musicName);
-                            }
-                            try {
-                                Mp3File m = new Mp3File(filePath);
-                                int lengthInSeconds = (int) m.getLengthInSeconds();
-                                if (lengthInSeconds > 90) {
-                                    mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), lengthInSeconds));
-                                    continue;
-                                }
-                                Log.w(TAG, "scanSdcard: getLengthInSeconds: " + lengthInSeconds);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
+
+            if (files == null || files.length <= 0) return;
+
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    scanSdcard(file);
+                    Log.w(TAG, "scanSdcard: scanSdcard 执行了:" + (count++));
+                } else {
+                    filterFile(file);
                 }
             }
         }
@@ -245,6 +216,49 @@ public class MusicDispatcher {
             refreshMusicArray(musicBeansArray, mTempIndexArray);
 
             mIsSearching = false;
+        }
+
+        private void filterFile(File file) {
+            String filePath = file.getAbsolutePath();
+            if (filePath.endsWith(".mp3")) {
+                // 获取到文件名
+                String unknownName = filePath.substring(filePath.lastIndexOf("/") + 1, filePath.lastIndexOf("."));
+                String musicName = unknownName;
+                String singer = "未知";
+//                // 依照虾米音乐和网易云音乐的命名规范赋音乐名和歌手名
+//                int wyIndex = unknownName.indexOf("-");
+//                int xmIndex = unknownName.indexOf("_");
+//                if (wyIndex != -1) {//网易云音乐的命名方式,左边歌手名,右边歌曲名
+//                    musicName = unknownName.substring(wyIndex + 1).trim();
+//                    singer = unknownName.substring(0, wyIndex).trim();
+//                    Log.w(TAG, "scanSdcard: 网易歌曲: 歌名: " + musicName + "; 歌手: " + singer);
+//                } else if (xmIndex != -1) {//虾米音乐的命名方式,左边歌曲名,右边歌手名
+//                    musicName = unknownName.substring(0, xmIndex).trim();
+//                    singer = unknownName.substring(xmIndex + 1).trim();
+//                    Log.w(TAG, "scanSdcard: 虾米歌曲: 歌名: " + musicName + "; 歌手: " + singer);
+//                } else {
+//                    Log.w(TAG, "scanSdcard: 未知歌曲: 歌名: " + musicName);
+//                }
+                try {
+                    Mp3File m = new Mp3File(filePath);
+                    int lengthInSeconds = (int) m.getLengthInSeconds();
+                    if (lengthInSeconds > 90) {
+                        if (m.hasId3v2Tag()) {
+                            ID3v2 id3v2Tag = m.getId3v2Tag();
+                            musicName = id3v2Tag.getTitle();
+                            singer = id3v2Tag.getArtist();
+                        } else if (m.hasId3v1Tag()) {
+                            ID3v1 id3v1Tag = m.getId3v1Tag();
+                            musicName = id3v1Tag.getTitle();
+                            singer = id3v1Tag.getArtist();
+                        }
+                        mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), lengthInSeconds));
+                    }
+                    Log.w(TAG, "scanSdcard: getLengthInSeconds: " + lengthInSeconds);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -288,7 +302,7 @@ public class MusicDispatcher {
             Log.w(TAG, "informPlay: mDataChangedListenerList.onItemChanged(mCurrentIndex): " + mCurrentIndex);
 
             saveMusic();
-        }else {
+        } else {
             Toaster.toast(mContext, "没有歌曲,请尝试扫描本地歌曲");
         }
 

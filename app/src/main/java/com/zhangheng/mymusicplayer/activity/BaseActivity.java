@@ -22,6 +22,8 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         setContentView(inflateView());
 
+//        ButterKnife.bind(this);
+
         setToolbar();
 
         initView();
@@ -47,6 +49,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
 
         setSupportActionBar(toolbar);
+
         bindToolbarAndDrawer(toolbar);
     }
 

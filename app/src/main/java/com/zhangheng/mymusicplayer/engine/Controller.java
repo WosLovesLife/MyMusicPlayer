@@ -32,7 +32,7 @@ import java.io.IOException;
  * 通过调度器Dispatcher获取歌曲资源
  * Created by zhangH on 2016/4/30.
  */
-public class Controller{
+public class Controller {
     private static final String TAG = Constants.TAG;
 
     /** 单例的实例,由newsInstance构造,不为null时返回 */
@@ -110,17 +110,28 @@ public class Controller{
             mCurrentMusicBean = musicBean;
         }
         /** 当调度器数据加载完毕,通过反馈上次的播放状态,让UI同步到正确的位置 */
-        updateUi();
+        updateUi(true);
     }
 
     /** 同步当前状态到UI层 */
-    private void updateUi() {
+    private void updateUi(boolean isChangeMusic) {
+
         if (mOnPlayerStateChangedListener != null && mCurrentMusicBean != null) {
-            mOnPlayerStateChangedListener.onPlayStateChanged(
-                    mCurrentPlayerState == PLAYER_STATE_PLAYING,
-                    mCurrentMusicDuration,
-                    mCurrentMusicProgress,
-                    mCurrentMusicBean);
+            if (isChangeMusic) {
+
+                mOnPlayerStateChangedListener.onChangeMusic(
+                        mCurrentPlayerState == PLAYER_STATE_PLAYING,
+                        mCurrentMusicDuration,
+                        mCurrentMusicProgress,
+                        mCurrentMusicBean);
+            } else {
+
+                mOnPlayerStateChangedListener.onPlayStateChanged(
+                        mCurrentPlayerState == PLAYER_STATE_PLAYING,
+                        mCurrentMusicDuration,
+                        mCurrentMusicProgress,
+                        mCurrentMusicBean);
+            }
         }
     }
 
@@ -137,7 +148,7 @@ public class Controller{
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mContext.unbindService(mControllerServiceConnection);
+//            mContext.unbindService(mControllerServiceConnection);
             Log.w(TAG, "onServiceDisconnected: ");
         }
     }
@@ -151,7 +162,7 @@ public class Controller{
             mCurrentMusicProgress = progress;
             mCurrentPlayerState = PLAYER_STATE_PLAYING;
 
-            updateUi();
+            updateUi(false);
             updateRemoteView();
         }
 
@@ -161,7 +172,7 @@ public class Controller{
             mCurrentMusicProgress = progress;
             mCurrentPlayerState = PLAYER_STATE_PAUSE;
 
-            updateUi();
+            updateUi(false);
             updateRemoteView();
         }
 
@@ -183,6 +194,7 @@ public class Controller{
 
             /* 通过play()方法开启播放 */
             mCurrentPlayerState = PLAYER_STATE_PAUSE;
+            updateUi(true);
             play();
         }
 
@@ -190,13 +202,13 @@ public class Controller{
         public void onServiceStop() {
             Log.w(TAG, "onServiceStop: ");
 
-            mContext.unbindService(mControllerServiceConnection);
-
             mMusicDispatcher.saveMusic();
 
             /* 卸载广播 */
             unregisterBroadcast(mHeadsetOffBroadcast);
             unregisterBroadcast(mRemoteViewControlBroadcast);
+
+            System.exit(0);
         }
 
         @Override
@@ -233,10 +245,10 @@ public class Controller{
     public void setOnPlayerStateChangedListener(OnPlayerStateChangedListener onPlayerStateChangedListener) {
         mOnPlayerStateChangedListener = onPlayerStateChangedListener;
         /** 当UI界面启动时,如果注册了该监听,则向UI层反馈当前的播放状态,让UI同步到正确的位置 */
-        updateUi();
+        updateUi(true);
     }
 
-    public void releaseOnPlayerStateChangedListener(){
+    public void removeOnPlayerStateChangedListener() {
         mOnPlayerStateChangedListener = null;
     }
 
@@ -340,4 +352,16 @@ public class Controller{
         mContext.unregisterReceiver(broadcastReceiver);
     }
     /////// Broadcast-end //////
+
+    /** 调用该方法结束播放服务 */
+    public void stopAudioService() {
+        if (ServiceStateUtils.isRunning(mContext, AudioPlayer.class)) {
+
+            mContext.unbindService(mControllerServiceConnection);
+            Intent i = new Intent(mContext, AudioPlayer.class);
+            mContext.stopService(i);
+
+            Log.w(TAG, "stopAudioService: ");
+        }
+    }
 }

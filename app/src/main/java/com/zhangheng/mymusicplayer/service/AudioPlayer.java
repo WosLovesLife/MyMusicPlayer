@@ -12,13 +12,12 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.broadcast.RemoteViewControlBroadcast;
-import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
 
@@ -30,7 +29,7 @@ import java.io.IOException;
  */
 public class AudioPlayer extends Service {
 
-    private static final String TAG = Constants.TAG;
+    private static final String TAG = "AudioPlayer";
     private OnMediaPlayerStateChangedListener mOnMediaPlayerStateChangedListener;
 
     private MediaPlayer mMediaPlayer;
@@ -52,12 +51,8 @@ public class AudioPlayer extends Service {
         mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                mp.stop();
-                mp.reset();
-                stopRefreshProgress();
-                if (mOnMediaPlayerStateChangedListener != null) {
-                    mOnMediaPlayerStateChangedListener.onPlayComplete();
-                }
+                stopMediaPlayer();
+                mMediaPlayer.reset();
             }
         });
 
@@ -70,6 +65,14 @@ public class AudioPlayer extends Service {
                 }
             }
         });
+    }
+
+    private void stopMediaPlayer(){
+        mMediaPlayer.stop();
+        stopRefreshProgress();
+        if (mOnMediaPlayerStateChangedListener != null) {
+            mOnMediaPlayerStateChangedListener.onPlayComplete();
+        }
     }
 
     public Handler mHandler = new Handler() {
@@ -86,12 +89,13 @@ public class AudioPlayer extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Log.w(TAG, "onDestroy: " );
 
         /* 销毁MediaPlayer对象 */
         if (mMediaPlayer != null) {
+            stopMediaPlayer();
             mMediaPlayer.release();
             mMediaPlayer = null;
-            stopRefreshProgress();
         }
 
         /* 销毁Handler */
@@ -108,6 +112,7 @@ public class AudioPlayer extends Service {
         /* 通知监听者服务销毁 */
         if (mOnMediaPlayerStateChangedListener != null) {
             mOnMediaPlayerStateChangedListener.onServiceStop();
+            mOnMediaPlayerStateChangedListener = null;
         }
     }
 
@@ -158,8 +163,6 @@ public class AudioPlayer extends Service {
         stopRefreshProgress();
         mMediaPlayer.setDataSource(uri);
         mMediaPlayer.prepareAsync();
-
-
     }
 
     private void resume() {
@@ -276,16 +279,8 @@ public class AudioPlayer extends Service {
         mNotification.when = System.currentTimeMillis();
 
         /* 为通知栏自定义布局组件赋值.如果值有问题就赋默认值 */
-        if (TextUtils.isEmpty(musicName)) {
-            mRemoteViews.setTextViewText(R.id.remote_view_name, "未知歌曲");
-        } else {
-            mRemoteViews.setTextViewText(R.id.remote_view_name, musicName);
-        }
-        if (TextUtils.isEmpty(singer)) {
-            mRemoteViews.setTextViewText(R.id.remote_view_singer, "未知歌手");
-        } else {
-            mRemoteViews.setTextViewText(R.id.remote_view_singer, singer);
-        }
+        mRemoteViews.setTextViewText(R.id.remote_view_name, musicName);
+        mRemoteViews.setTextViewText(R.id.remote_view_singer, singer);
         if (album == null) {
             mRemoteViews.setImageViewResource(R.id.remote_view_icon, R.mipmap.icon_launcher);
         } else {

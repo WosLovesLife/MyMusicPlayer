@@ -72,7 +72,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
         } else {
             mMusicListAdapter.notifyDataSetChanged();
 
-            Toaster.toast(getActivity(), "音乐列表更新了~");
+            Toaster.toast(getActivity(), "音乐列表更新了~ 当前共有 "+musicBeanArray.size()+" 首歌曲");
         }
 
         mInitialsArray = musicIndexArray;

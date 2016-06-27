@@ -1,18 +1,13 @@
 package com.zhangheng.mymusicplayer.activity;
 
-import android.app.ActivityManager;
 import android.app.Fragment;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 
 import com.project.myutilslibrary.ServiceStateUtils;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.engine.Controller;
-import com.zhangheng.mymusicplayer.fragment.SplashFragment;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
 
 public class SplashActivity extends BaseActivity {
@@ -33,13 +28,11 @@ public class SplashActivity extends BaseActivity {
     protected void initData() {
         super.initData();
 
-        /** 这里调用该方法是为了在Splash页面是就开始加载服务 */
-        Controller.newInstance(this);
-
-
-        if (ServiceStateUtils.isRunning(this,AudioPlayer.class)) {
+        if (ServiceStateUtils.isRunning(this, AudioPlayer.class)) {
             enterMainPage();
         } else {
+            /** 这里调用该方法是为了在Splash页面是就开始加载服务 */
+            Controller.newInstance(this);
             delayed();
         }
     }
@@ -49,6 +42,7 @@ public class SplashActivity extends BaseActivity {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
+                Log.w(TAG, "delayed run: " );
                 enterMainPage();
 
                 overridePendingTransition(R.anim.alpha_dialog_show, R.anim.alpha_dialog_hide);
