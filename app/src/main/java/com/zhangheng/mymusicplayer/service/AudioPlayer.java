@@ -4,7 +4,9 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.os.Binder;
@@ -17,6 +19,7 @@ import android.widget.RemoteViews;
 
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
+import com.zhangheng.mymusicplayer.broadcast.HeadsetOffBroadcast;
 import com.zhangheng.mymusicplayer.broadcast.RemoteViewControlBroadcast;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
@@ -30,17 +33,39 @@ import java.io.IOException;
 public class AudioPlayer extends Service {
 
     private static final String TAG = "AudioPlayer";
+
+    /* 监听器 */
     private OnMediaPlayerStateChangedListener mOnMediaPlayerStateChangedListener;
 
+    /* 流媒体服务 */
     private MediaPlayer mMediaPlayer;
+
+    /* 远程服务 */
     private Notification mNotification;
     private RemoteViews mRemoteViews;
+
+    /* 广播 */
+    private HeadsetOffBroadcast mHeadsetOffBroadcast;
+    private RemoteViewControlBroadcast mRemoteViewControlBroadcast;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
         setMediaPlayer();
+
+        registerBroadcast();
+    }
+
+    /** 注册各类广播事件 */
+    private void registerBroadcast() {
+
+        /** 初始化广播接收者 */
+        mHeadsetOffBroadcast = new HeadsetOffBroadcast();
+        registerHeadsetBroadcast(mHeadsetOffBroadcast);
+
+        mRemoteViewControlBroadcast = new RemoteViewControlBroadcast();
+        registerRemoteViewBroadcast(mRemoteViewControlBroadcast);
     }
 
     /** 创建系统的MediaPlayer对象 以及事件监听 */
@@ -114,6 +139,10 @@ public class AudioPlayer extends Service {
             mOnMediaPlayerStateChangedListener.onServiceStop();
             mOnMediaPlayerStateChangedListener = null;
         }
+
+        /* 卸载广播 */
+        unregisterBroadcast(mHeadsetOffBroadcast);
+        unregisterBroadcast(mRemoteViewControlBroadcast);
     }
 
     @Nullable
@@ -302,4 +331,30 @@ public class AudioPlayer extends Service {
     private void setOnAudioPlayerCreateListener(OnMediaPlayerStateChangedListener onMediaPlayerStateChangedListener) {
         mOnMediaPlayerStateChangedListener = onMediaPlayerStateChangedListener;
     }
+
+    /////// Broadcast-start //////
+    /* 注册耳机拔出事件的广播接收 */
+    private void registerHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
+        if (broadcastReceiver == null) return;
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_HEADSET_PLUG);
+        registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+    /* 注册通知栏按钮控制广播接收 */
+    private void registerRemoteViewBroadcast(RemoteViewControlBroadcast remoteViewControlBroadcast) {
+        if (remoteViewControlBroadcast == null) return;
+
+        IntentFilter intentFilter = RemoteViewControlBroadcast.getIntentFilter();
+        registerReceiver(remoteViewControlBroadcast, intentFilter);
+    }
+
+    /* 注销对于耳机拔出事件的广播接收 */
+    private void unregisterBroadcast(BroadcastReceiver broadcastReceiver) {
+        if (broadcastReceiver == null) return;
+
+        unregisterReceiver(broadcastReceiver);
+    }
+    /////// Broadcast-end //////
 }

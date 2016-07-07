@@ -1,10 +1,8 @@
 package com.zhangheng.mymusicplayer.engine;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.os.IBinder;
@@ -15,8 +13,6 @@ import com.project.myutilslibrary.ServiceStateUtils;
 import com.project.myutilslibrary.Toaster;
 import com.project.myutilslibrary.pictureloader.PictureLoader;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
-import com.zhangheng.mymusicplayer.broadcast.HeadsetOffBroadcast;
-import com.zhangheng.mymusicplayer.broadcast.RemoteViewControlBroadcast;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
@@ -62,8 +58,9 @@ public class Controller {
     //-- 沟通调度器的变量/常量-start --
     private MusicBean mCurrentMusicBean;
     private MusicDispatcher mMusicDispatcher;
-    private HeadsetOffBroadcast mHeadsetOffBroadcast;
-    private RemoteViewControlBroadcast mRemoteViewControlBroadcast;
+
+//    private HeadsetOffBroadcast mHeadsetOffBroadcast;
+//    private RemoteViewControlBroadcast mRemoteViewControlBroadcast;
     //-- 沟通调度器的变量/常量-end --
 
     private Controller(Context context) {
@@ -96,12 +93,12 @@ public class Controller {
         /** 保定和调度器的关联 */
         mMusicDispatcher = MusicDispatcher.newInstance(mContext);
 
-        /** 初始化广播接收者 */
-        mHeadsetOffBroadcast = new HeadsetOffBroadcast();
-        registerHeadsetBroadcast(mHeadsetOffBroadcast);
-
-        mRemoteViewControlBroadcast = new RemoteViewControlBroadcast();
-        registerRemoteViewBroadcast(mRemoteViewControlBroadcast);
+//        /** 初始化广播接收者 */
+//        mHeadsetOffBroadcast = new HeadsetOffBroadcast();
+//        registerHeadsetBroadcast(mHeadsetOffBroadcast);
+//
+//        mRemoteViewControlBroadcast = new RemoteViewControlBroadcast();
+//        registerRemoteViewBroadcast(mRemoteViewControlBroadcast);
     }
 
     /** 获取上次应用结束后保存的进度. */
@@ -204,9 +201,9 @@ public class Controller {
 
             mMusicDispatcher.saveMusic();
 
-            /* 卸载广播 */
-            unregisterBroadcast(mHeadsetOffBroadcast);
-            unregisterBroadcast(mRemoteViewControlBroadcast);
+//            /* 卸载广播 */
+//            unregisterBroadcast(mHeadsetOffBroadcast);
+//            unregisterBroadcast(mRemoteViewControlBroadcast);
 
             System.exit(0);
         }
@@ -327,31 +324,31 @@ public class Controller {
         }
     }
 
-    /////// Broadcast-start //////
-    /* 注册耳机拔出事件的广播接收 */
-    private void registerHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
-        if (broadcastReceiver == null) return;
-
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Intent.ACTION_HEADSET_PLUG);
-        mContext.registerReceiver(broadcastReceiver, intentFilter);
-    }
-
-    /* 注册通知栏按钮控制广播接收 */
-    private void registerRemoteViewBroadcast(RemoteViewControlBroadcast remoteViewControlBroadcast) {
-        if (remoteViewControlBroadcast == null) return;
-
-        IntentFilter intentFilter = RemoteViewControlBroadcast.getIntentFilter();
-        mContext.registerReceiver(remoteViewControlBroadcast, intentFilter);
-    }
-
-    /* 注销对于耳机拔出事件的广播接收 */
-    private void unregisterBroadcast(BroadcastReceiver broadcastReceiver) {
-        if (broadcastReceiver == null) return;
-
-        mContext.unregisterReceiver(broadcastReceiver);
-    }
-    /////// Broadcast-end //////
+//    /////// Broadcast-start //////
+//    /* 注册耳机拔出事件的广播接收 */
+//    private void registerHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
+//        if (broadcastReceiver == null) return;
+//
+//        IntentFilter intentFilter = new IntentFilter();
+//        intentFilter.addAction(Intent.ACTION_HEADSET_PLUG);
+//        mContext.registerReceiver(broadcastReceiver, intentFilter);
+//    }
+//
+//    /* 注册通知栏按钮控制广播接收 */
+//    private void registerRemoteViewBroadcast(RemoteViewControlBroadcast remoteViewControlBroadcast) {
+//        if (remoteViewControlBroadcast == null) return;
+//
+//        IntentFilter intentFilter = RemoteViewControlBroadcast.getIntentFilter();
+//        mContext.registerReceiver(remoteViewControlBroadcast, intentFilter);
+//    }
+//
+//    /* 注销对于耳机拔出事件的广播接收 */
+//    private void unregisterBroadcast(BroadcastReceiver broadcastReceiver) {
+//        if (broadcastReceiver == null) return;
+//
+//        mContext.unregisterReceiver(broadcastReceiver);
+//    }
+//    /////// Broadcast-end //////
 
     /** 调用该方法结束播放服务 */
     public void stopAudioService() {

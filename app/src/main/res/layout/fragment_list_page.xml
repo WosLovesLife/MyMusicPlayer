@@ -23,7 +23,7 @@
     <android.support.design.widget.CoordinatorLayout
         android:id="@+id/snack_bar_container"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="42dp"
         android:layout_gravity="bottom"
         android:layout_alignParentBottom="true"/>
 </FrameLayout>
