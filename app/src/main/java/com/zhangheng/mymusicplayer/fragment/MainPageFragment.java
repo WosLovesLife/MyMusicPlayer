@@ -303,8 +303,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 
             Bitmap bgBitmap = bitmap;
             if (bitmap == null) {
-                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.app_widget_default);
-                bgBitmap = BitmapFactory.decodeResource(getActivity().getResources(), R.drawable.fm_run_bg);
+                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.player_default_album);
+                bgBitmap = BitmapFactory.decodeResource(getActivity().getResources(), R.drawable.playpage_background);
             }
 
             View bgView = ((MainPageActivity) getActivity()).getBgView();

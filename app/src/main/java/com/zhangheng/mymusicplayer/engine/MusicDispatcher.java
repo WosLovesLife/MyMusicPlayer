@@ -96,19 +96,16 @@ public class MusicDispatcher {
         });
     }
 
-    public void scanSdcardMusics() {
+    public void scanSdcardMusics(SearchMusics.OnMusicSearchingListener onMusicSearchingListener) {
         SearchMusics.getMusicListFromSdCard(mContext, new SearchMusics.OnFinishedListener() {
             @Override
             public void onFinished(ArrayList<MusicBean> musicBeanList, ArrayList<String> musicIndexList, int savedIndex) {
                 refreshMusicArray(musicBeanList, musicIndexList);
                 mCurrentIndex = savedIndex;
             }
-        });
+        },onMusicSearchingListener);
     }
 
-
-    //////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////
     public void playSelectedItem(int position) throws PlayerException {
         mCurrentIndex = position;
         Log.w(TAG, "playSelectedItem: mCurrentIndex: " + mCurrentIndex);

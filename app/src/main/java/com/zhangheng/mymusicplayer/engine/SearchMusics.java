@@ -3,6 +3,7 @@ package com.zhangheng.mymusicplayer.engine;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Environment;
+import android.os.Handler;
 
 import com.project.myutilslibrary.PinyinUtils;
 import com.project.myutilslibrary.SdcardEnableUtils;
@@ -24,8 +25,12 @@ import java.util.Collections;
  */
 public class SearchMusics {
 
-    interface OnFinishedListener {
+    public interface OnFinishedListener {
         void onFinished(ArrayList<MusicBean> musicBeanList, ArrayList<String> musicIndexList, int savedIndex);
+    }
+
+    public interface OnMusicSearchingListener {
+        void foundMusic(MusicBean musicBean);
     }
 
     private static final String TAG = "SearchMusics";
@@ -33,6 +38,7 @@ public class SearchMusics {
 
     private static Context sContext;
     private static OnFinishedListener sOnFinishedListener;
+    private static OnMusicSearchingListener sOnMusicSearchingListener;
     private static boolean sIsSearching;
 
     private SearchMusics() {
@@ -59,7 +65,7 @@ public class SearchMusics {
      * @param context            用于SD卡的相关操作
      * @param onFinishedListener 当音乐扫描完毕 通过该接口的回调方法将结果传出
      */
-    public static void getMusicListFromSdCard(Context context, final OnFinishedListener onFinishedListener) {
+    public static void getMusicListFromSdCard(Context context, final OnFinishedListener onFinishedListener, OnMusicSearchingListener onMusicSearchingListener) {
         if (sIsSearching) {
             Toaster.toastLong(sContext, "正在扫描音乐,请稍候...");
             return;
@@ -67,6 +73,7 @@ public class SearchMusics {
 
         sContext = context;
         sOnFinishedListener = onFinishedListener;
+        sOnMusicSearchingListener = onMusicSearchingListener;
 
         sIsSearching = true;
 
@@ -76,7 +83,6 @@ public class SearchMusics {
 //        Log.w(TAG, "check4updateDatabase: 准备扫描SD卡");
 
         if (SdcardEnableUtils.isEnable()) {
-            Toaster.toastLong(sContext, "开始扫描,请稍候...");
 
             AsyncTask4ScanSdcard asyncTask4ScanSdcard = new AsyncTask4ScanSdcard();
             asyncTask4ScanSdcard.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -132,8 +138,10 @@ public class SearchMusics {
 
         @Override
         protected void onPostExecute(ArrayList<MusicBean> musicBeansArray) {
-            sOnFinishedListener.onFinished(musicBeansArray, mTempIndexArray, 0);
-
+            if (sOnFinishedListener != null) {
+                sOnFinishedListener.onFinished(musicBeansArray, mTempIndexArray, 0);
+                sOnFinishedListener = null;
+            }
             sIsSearching = false;
         }
 
@@ -157,7 +165,17 @@ public class SearchMusics {
                             musicName = id3v1Tag.getTitle();
                             singer = id3v1Tag.getArtist();
                         }
-                        mTempMusicBeansArray.add(new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), lengthInSeconds));
+                        final MusicBean musicBean = new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), lengthInSeconds);
+
+                        new Handler(sContext.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (sOnMusicSearchingListener != null) {
+                                    sOnMusicSearchingListener.foundMusic(musicBean);
+                                }
+                            }
+                        });
+                        mTempMusicBeansArray.add(musicBean);
                     }
 //                    Log.w(TAG, "scanSdcard: getLengthInSeconds: " + lengthInSeconds);
                 } catch (Exception e) {
@@ -165,6 +183,13 @@ public class SearchMusics {
                 }
             }
         }
+
+
+        /**
+         * 从数据库中获取已经存在的歌曲列表
+         * @param context 操作数据库的上下文
+         * @param onFinishedListener 当数据读取完毕时调用
+         */
     }
 
     public static void getMusicListFromDatabase(Context context, final OnFinishedListener onFinishedListener) {
@@ -196,7 +221,10 @@ public class SearchMusics {
 
         @Override
         protected void onPostExecute(ArrayList<MusicBean> musicBeansArray) {
-            sOnFinishedListener.onFinished(musicBeansArray, mTempIndexArray, mCurrentIndex);
+            if (sOnFinishedListener != null) {
+                sOnFinishedListener.onFinished(musicBeansArray, mTempIndexArray, mCurrentIndex);
+                sOnFinishedListener = null;
+            }
         }
     }
 }

@@ -19,4 +19,11 @@
         android:layout_height="match_parent">
 
     </com.project.myutilslibrary.view.quickindex.QuickBarWithToast>
+
+    <android.support.design.widget.CoordinatorLayout
+        android:id="@+id/snack_bar_container"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom"
+        android:layout_alignParentBottom="true"/>
 </FrameLayout>
