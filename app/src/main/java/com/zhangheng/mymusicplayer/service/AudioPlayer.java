@@ -52,7 +52,6 @@ public class AudioPlayer extends Service {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 stopMediaPlayer();
-                mMediaPlayer.reset();
             }
         });
 
@@ -67,9 +66,10 @@ public class AudioPlayer extends Service {
         });
     }
 
-    private void stopMediaPlayer(){
+    private void stopMediaPlayer() {
         mMediaPlayer.stop();
         stopRefreshProgress();
+        mMediaPlayer.reset();
         if (mOnMediaPlayerStateChangedListener != null) {
             mOnMediaPlayerStateChangedListener.onPlayComplete();
         }
@@ -89,7 +89,7 @@ public class AudioPlayer extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.w(TAG, "onDestroy: " );
+        Log.w(TAG, "onDestroy: ");
 
         /* 销毁MediaPlayer对象 */
         if (mMediaPlayer != null) {

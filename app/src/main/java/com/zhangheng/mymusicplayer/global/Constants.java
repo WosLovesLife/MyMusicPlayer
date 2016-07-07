@@ -7,7 +7,6 @@ public interface Constants {
     String TAG = "MyMusicPlayer";
 
     //-- Key-start --
-    String KEY_LAST_DATABASE_UPDATED_TIME = "key_last_database_updated_time";
 
     String KEY_LAST_SAVED_MUSIC = "key_last_saved_music";
 

@@ -1,1 +1,1 @@
-include ':app', ':myutilslibrary', ':circleimageview'
+include ':app', ':myutilslibrary', ':newui'

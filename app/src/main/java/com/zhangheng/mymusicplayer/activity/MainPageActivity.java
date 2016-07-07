@@ -21,7 +21,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 
-import com.project.myutilslibrary.Toaster;
 import com.zhangheng.mymusicplayer.MusicApp;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.fragment.MainPageFragment;
@@ -192,21 +191,21 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     public boolean onNavigationItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.nav_camera:
-                Toaster.toast(getApplicationContext(), "nav_camera");
-                break;
-            case R.id.nav_gallery:
-                Toaster.toast(getApplicationContext(), "nav_gallery");
-                break;
-            case R.id.nav_slideshow:
-                Toaster.toast(getApplicationContext(), "nav_slideshow");
-                break;
-            case R.id.nav_manage:
-                Toaster.toast(getApplicationContext(), "nav_manage");
-                break;
-            case R.id.nav_share:
-                Toaster.toast(getApplicationContext(), "nav_share");
-                break;
+//            case R.id.nav_camera:
+//                Toaster.toast(getApplicationContext(), "nav_camera");
+//                break;
+//            case R.id.nav_gallery:
+//                Toaster.toast(getApplicationContext(), "nav_gallery");
+//                break;
+//            case R.id.nav_slideshow:
+//                Toaster.toast(getApplicationContext(), "nav_slideshow");
+//                break;
+//            case R.id.nav_manage:
+//                Toaster.toast(getApplicationContext(), "nav_manage");
+//                break;
+//            case R.id.nav_share:
+//                Toaster.toast(getApplicationContext(), "nav_share");
+//                break;
             case R.id.nav_off_timer:    // 定时器
                 updateOffTimer(item);
 

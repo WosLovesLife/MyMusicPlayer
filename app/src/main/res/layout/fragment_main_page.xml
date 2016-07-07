@@ -6,6 +6,7 @@
     android:id="@+id/mainPageLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingTop="24dp"
     android:orientation="vertical">
 
     <FrameLayout
@@ -54,7 +55,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:textColor="@color/colorSeekBarTime"
+                    android:textColor="@color/colorListItem"
                     android:textSize="12sp"
                     tools:text="00:00"/>
 
@@ -74,7 +75,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:textColor="@color/colorSeekBarTime"
+                    android:textColor="@color/colorListItem"
                     android:textSize="12sp"
                     tools:text="00:00"/>
             </LinearLayout>

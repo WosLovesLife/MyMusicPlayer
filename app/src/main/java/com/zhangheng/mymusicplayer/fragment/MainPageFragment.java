@@ -333,7 +333,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
                     sourceBg = new BitmapDrawable(BitmapFactory.decodeResource(getResources(), android.R.color.white));
                 }
                /* 对原图片进行高斯模糊处理 */
-                BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 30);
+                BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 50);
                 TransitionDrawable transitionDrawable = getTransitionDrawable(sourceBg, shadowBg, 520);
                 bgView.setBackground(transitionDrawable);
             }
