@@ -60,7 +60,7 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.w(TAG, "onCreate: " );
+        Log.w(TAG, "onCreate: ");
 
         if (savedInstanceState != null) {
             String string = savedInstanceState.getString(EXTRA_KILL_ACTIVITIES);
@@ -73,7 +73,7 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        Log.w(TAG, "onNewIntent: " );
+        Log.w(TAG, "onNewIntent: ");
 
         Bundle extras = intent.getExtras();
 
@@ -100,20 +100,21 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
             sinkStatusBar(toolbar);
         }
 
-        /** 设置Drawer和Toolbar的开启关系 */
+        /** 设置Drawer和Toolbar的开启关系 通知系统同步关系 */
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-
-        /** 通知系统同步关系 */
+        if (drawer != null)
+            drawer.addDrawerListener(toggle);
         toggle.syncState();
 
         /** 加载Drawer导航组件,注册事件监听 */
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
+        if (navigationView != null){
+            navigationView.setNavigationItemSelectedListener(this);
 
-        if (((MusicApp) getApplication()).isOffTimer()) {
-            updateOffTimer(navigationView.getMenu().findItem(R.id.nav_off_timer));
+            if (((MusicApp) getApplication()).isOffTimer()) {
+                updateOffTimer(navigationView.getMenu().findItem(R.id.nav_off_timer));
+            }
         }
     }
 
@@ -128,7 +129,7 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
         if (appBar != null) {
 
             /** 设置Toolbar的背景颜色 */
-            appBar.setBackground(getResources().getDrawable(R.drawable.shape_toolbar_bg));
+            appBar.setBackgroundResource(R.drawable.shape_toolbar_bg);
             appBar.setTargetElevation(0);
         }
     }
@@ -180,7 +181,7 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
+        if (drawer!=null && drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
@@ -191,21 +192,6 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     public boolean onNavigationItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
-//            case R.id.nav_camera:
-//                Toaster.toast(getApplicationContext(), "nav_camera");
-//                break;
-//            case R.id.nav_gallery:
-//                Toaster.toast(getApplicationContext(), "nav_gallery");
-//                break;
-//            case R.id.nav_slideshow:
-//                Toaster.toast(getApplicationContext(), "nav_slideshow");
-//                break;
-//            case R.id.nav_manage:
-//                Toaster.toast(getApplicationContext(), "nav_manage");
-//                break;
-//            case R.id.nav_share:
-//                Toaster.toast(getApplicationContext(), "nav_share");
-//                break;
             case R.id.nav_off_timer:    // 定时器
                 updateOffTimer(item);
 

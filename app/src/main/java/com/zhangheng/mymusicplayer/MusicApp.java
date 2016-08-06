@@ -57,19 +57,16 @@ public class MusicApp extends Application {
         setOnOffTimerListener(offTimerListener);
 
         /* 延迟定时秒数后执行关闭本程序的操作 */
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Log.w(TAG, "run: ");
-                cancelOffTimer();
+        mHandler.postDelayed(() -> {
+            Log.w(TAG, "run: ");
+            cancelOffTimer();
 
-                /* 退出所有Activity */
-                Intent intent2KillAllActivity = MainPageActivity.getIntent2KillAllActivity(getApplicationContext());
-                startActivity(intent2KillAllActivity);
+            /* 退出所有Activity */
+            Intent intent2KillAllActivity = MainPageActivity.getIntent2KillAllActivity(getApplicationContext());
+            startActivity(intent2KillAllActivity);
 
-                /* 关闭播放服务 */
-                Controller.newInstance(MusicApp.this).stopAudioService();
-            }
+            /* 关闭播放服务 */
+            Controller.newInstance(MusicApp.this).stopAudioService();
         }, millis);
 
         sTotalDate = millis;

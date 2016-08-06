@@ -354,7 +354,6 @@ public class AudioPlayer extends Service {
     private void unregisterBroadcast(BroadcastReceiver broadcastReceiver) {
         if (broadcastReceiver == null) return;
 
-        unregisterReceiver(broadcastReceiver);
-    }
+        unregisterReceiver(broadcastReceiver);    }
     /////// Broadcast-end //////
 }

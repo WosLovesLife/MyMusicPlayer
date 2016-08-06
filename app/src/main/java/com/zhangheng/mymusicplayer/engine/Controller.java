@@ -4,7 +4,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Bitmap;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -16,8 +15,9 @@ import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.global.Constants;
 import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
-import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
 
@@ -50,7 +50,6 @@ public class Controller {
     //-- 沟通Service的变量/常量-end --
 
     //-- 沟通UI的变量/常量-start --
-    private OnPlayerStateChangedListener mOnPlayerStateChangedListener;
     private int mCurrentMusicDuration;
     private int mCurrentMusicProgress;
     //-- 沟通UI的变量/常量-end --
@@ -58,10 +57,48 @@ public class Controller {
     //-- 沟通调度器的变量/常量-start --
     private MusicBean mCurrentMusicBean;
     private MusicDispatcher mMusicDispatcher;
-
-//    private HeadsetOffBroadcast mHeadsetOffBroadcast;
-//    private RemoteViewControlBroadcast mRemoteViewControlBroadcast;
     //-- 沟通调度器的变量/常量-end --
+
+    public class BaseEvent {
+        public boolean isPlaying;
+        public int duration;
+        public int progress;
+        public MusicBean musicBean;
+
+        public BaseEvent(boolean isPlaying, int duration, int progress, MusicBean musicBean) {
+            this.isPlaying = isPlaying;
+            this.duration = duration;
+            this.progress = progress;
+            this.musicBean = musicBean;
+        }
+    }
+
+    public class ChangeMusicEvent {
+        public BaseEvent mBaseEvent;
+
+        public ChangeMusicEvent(BaseEvent baseEvent) {
+            mBaseEvent = baseEvent;
+        }
+    }
+
+    public class PlayerStateChangedEvent {
+        public BaseEvent mBaseEvent;
+
+        public PlayerStateChangedEvent(BaseEvent baseEvent) {
+            mBaseEvent = baseEvent;
+        }
+    }
+
+    public class CompleteEvent {
+    }
+
+    public class UpdateProgressEvent {
+        public int mCurrentProgress;
+
+        public UpdateProgressEvent(int currentProgress) {
+            mCurrentProgress = currentProgress;
+        }
+    }
 
     private Controller(Context context) {
         mContext = context;
@@ -92,13 +129,6 @@ public class Controller {
 
         /** 保定和调度器的关联 */
         mMusicDispatcher = MusicDispatcher.newInstance(mContext);
-
-//        /** 初始化广播接收者 */
-//        mHeadsetOffBroadcast = new HeadsetOffBroadcast();
-//        registerHeadsetBroadcast(mHeadsetOffBroadcast);
-//
-//        mRemoteViewControlBroadcast = new RemoteViewControlBroadcast();
-//        registerRemoteViewBroadcast(mRemoteViewControlBroadcast);
     }
 
     /** 获取上次应用结束后保存的进度. */
@@ -112,24 +142,22 @@ public class Controller {
 
     /** 同步当前状态到UI层 */
     private void updateUi(boolean isChangeMusic) {
-
-        if (mOnPlayerStateChangedListener != null && mCurrentMusicBean != null) {
-            if (isChangeMusic) {
-
-                mOnPlayerStateChangedListener.onChangeMusic(
-                        mCurrentPlayerState == PLAYER_STATE_PLAYING,
-                        mCurrentMusicDuration,
-                        mCurrentMusicProgress,
-                        mCurrentMusicBean);
-            } else {
-
-                mOnPlayerStateChangedListener.onPlayStateChanged(
-                        mCurrentPlayerState == PLAYER_STATE_PLAYING,
-                        mCurrentMusicDuration,
-                        mCurrentMusicProgress,
-                        mCurrentMusicBean);
-            }
+        if (isChangeMusic) {
+            EventBus.getDefault().post(new ChangeMusicEvent(
+                    new BaseEvent(mCurrentPlayerState == PLAYER_STATE_PLAYING
+                            , mCurrentMusicDuration
+                            , mCurrentMusicProgress
+                            , mCurrentMusicBean
+                    )));
+        }else {
+            EventBus.getDefault().post(new PlayerStateChangedEvent(
+                    new BaseEvent(mCurrentPlayerState == PLAYER_STATE_PLAYING
+                            , mCurrentMusicDuration
+                            , mCurrentMusicProgress
+                            , mCurrentMusicBean
+                    )));
         }
+
     }
 
     /** ServiceBind监听器,获取从Service层返回的控制器对象 */
@@ -145,7 +173,6 @@ public class Controller {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-//            mContext.unbindService(mControllerServiceConnection);
             Log.w(TAG, "onServiceDisconnected: ");
         }
     }
@@ -177,9 +204,7 @@ public class Controller {
         public void onPlaying(int currentProgress) {
             mCurrentMusicProgress = currentProgress;
             mCurrentPlayerState = PLAYER_STATE_PLAYING;
-            if (mOnPlayerStateChangedListener != null) {
-                mOnPlayerStateChangedListener.updateProgress(mCurrentMusicProgress);
-            }
+            EventBus.getDefault().post(new UpdateProgressEvent(mCurrentMusicProgress));
         }
 
         /**
@@ -201,19 +226,13 @@ public class Controller {
 
             mMusicDispatcher.saveMusic();
 
-//            /* 卸载广播 */
-//            unregisterBroadcast(mHeadsetOffBroadcast);
-//            unregisterBroadcast(mRemoteViewControlBroadcast);
-
             System.exit(0);
         }
 
         @Override
         public void onPlayComplete() {
             mCurrentPlayerState = PLAYER_STATE_IDLE;
-            if (mOnPlayerStateChangedListener != null) {
-                mOnPlayerStateChangedListener.onComplete();
-            }
+            EventBus.getDefault().post(new CompleteEvent());
 
             //====== 这里未来要准备一下, 根据不同的播放模式(随机播放, 列表顺序播放等)========
             next();
@@ -225,28 +244,18 @@ public class Controller {
 
         Log.w(TAG, "updateRemoteView: ");
         PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
-                new PictureLoader.OnPictureLoadHandleListener() {
-                    @Override
-                    public void onPictureLoadComplete(Bitmap bitmap) {
-                        mIControll.setRemoteViewInfo(
-                                mCurrentMusicBean.getMusicName(),
-                                mCurrentMusicBean.getSinger(),
-                                bitmap,
-                                mCurrentPlayerState == PLAYER_STATE_PLAYING);
-                    }
-                },
+                bitmap -> mIControll.setRemoteViewInfo(
+                        mCurrentMusicBean.getMusicName(),
+                        mCurrentMusicBean.getSinger(),
+                        bitmap,
+                        mCurrentPlayerState == PLAYER_STATE_PLAYING),
                 mCurrentMusicBean.getPath(), null, Dp2Px.toPX(mContext, 100), Dp2Px.toPX(mContext, 100));
     }
 
     /** UI层通过传递此回调接口, 当本类中的播放状态发生改变的时候,触发相应的回调方法. */
-    public void setOnPlayerStateChangedListener(OnPlayerStateChangedListener onPlayerStateChangedListener) {
-        mOnPlayerStateChangedListener = onPlayerStateChangedListener;
+    public void notifyPlayerState() {
         /** 当UI界面启动时,如果注册了该监听,则向UI层反馈当前的播放状态,让UI同步到正确的位置 */
         updateUi(true);
-    }
-
-    public void removeOnPlayerStateChangedListener() {
-        mOnPlayerStateChangedListener = null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -320,35 +329,10 @@ public class Controller {
             mIControll.seekProgress(seekToProgress);
         } else {
             /* 如果歌曲处于不可播放状态而用户拖动了进度条,则按照完成播放处理,将进度置0 */
-            mOnPlayerStateChangedListener.onComplete();
+            EventBus.getDefault().post(new CompleteEvent());
         }
     }
 
-//    /////// Broadcast-start //////
-//    /* 注册耳机拔出事件的广播接收 */
-//    private void registerHeadsetBroadcast(BroadcastReceiver broadcastReceiver) {
-//        if (broadcastReceiver == null) return;
-//
-//        IntentFilter intentFilter = new IntentFilter();
-//        intentFilter.addAction(Intent.ACTION_HEADSET_PLUG);
-//        mContext.registerReceiver(broadcastReceiver, intentFilter);
-//    }
-//
-//    /* 注册通知栏按钮控制广播接收 */
-//    private void registerRemoteViewBroadcast(RemoteViewControlBroadcast remoteViewControlBroadcast) {
-//        if (remoteViewControlBroadcast == null) return;
-//
-//        IntentFilter intentFilter = RemoteViewControlBroadcast.getIntentFilter();
-//        mContext.registerReceiver(remoteViewControlBroadcast, intentFilter);
-//    }
-//
-//    /* 注销对于耳机拔出事件的广播接收 */
-//    private void unregisterBroadcast(BroadcastReceiver broadcastReceiver) {
-//        if (broadcastReceiver == null) return;
-//
-//        mContext.unregisterReceiver(broadcastReceiver);
-//    }
-//    /////// Broadcast-end //////
 
     /** 调用该方法结束播放服务 */
     public void stopAudioService() {

@@ -1,1 +1,1 @@
-include ':app', ':myutilslibrary', ':newui'
+include ':app', ':myutilslibrary', ':newui', ':baserecyclerview'

@@ -18,11 +18,12 @@ import android.view.ViewGroup;
 
 import com.project.myutilslibrary.view.quickindex.QuickBarWithToast;
 import com.zhangheng.mymusicplayer.R;
-import com.zhangheng.mymusicplayer.bean.MusicBean;
-import com.zhangheng.mymusicplayer.dapter.RecyclerViewAdapter;
+import com.zhangheng.mymusicplayer.dapter.MusicListAdapter;
 import com.zhangheng.mymusicplayer.engine.MusicDispatcher;
-import com.zhangheng.mymusicplayer.engine.SearchMusics;
-import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 
@@ -30,9 +31,10 @@ import java.util.ArrayList;
  * 管理歌曲列表界面
  * Created by zhangH on 2016/5/17.
  */
-public class MusicListFragment extends Fragment implements OnMusicDispatchDataChangedListener, QuickBarWithToast.OnIndexChangedListener, RecyclerViewAdapter.OnItemClickListener {
+public class MusicListFragment extends Fragment implements  QuickBarWithToast.OnIndexChangedListener {
+    private static final String TAG = "MusicListFragment";
 
-    private RecyclerViewAdapter mMusicListAdapter;
+    private MusicListAdapter mMusicListAdapter;
     private MusicDispatcher mMusicDispatcher;
     private ArrayList<String> mInitialsArray;
     private RecyclerView mRecyclerView;
@@ -44,6 +46,8 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         setRetainInstance(true);
+
+        EventBus.getDefault().register(this);
     }
 
     @Nullable
@@ -62,43 +66,16 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
         super.onActivityCreated(savedInstanceState);
 
         mMusicDispatcher = MusicDispatcher.newInstance(getActivity());
-        mMusicDispatcher.setOnMusicDispatchDataChangedListener(this);
+        mMusicDispatcher.notifyMusicsEventPost();
 
         QuickBarWithToast quickBarWithToast = (QuickBarWithToast) getActivity().findViewById(R.id.quickIndexBar);
         quickBarWithToast.setOnIndexChangedListener(this);
     }
 
     @Override
-    public void onDispatchDataChanged(ArrayList<MusicBean> musicBeanArray, ArrayList<String> musicIndexArray, int currentIndex) {
-        if (mMusicListAdapter == null) {
-            mMusicListAdapter = new RecyclerViewAdapter(musicBeanArray);
-
-            mRecyclerView.setAdapter(mMusicListAdapter);
-            mMusicListAdapter.setOnItemClickListener(this);
-        } else {
-            mMusicListAdapter.notifyDataSetChanged();
-
-            makeSnackBar();
-            mSnackbar.setText("音乐列表更新了~ 当前共有 " + musicBeanArray.size() + " 首歌曲");
-            /* 扫描歌曲后必然后走该方法，所以将SnackBar的销毁工作也在这里进行 */
-            cancelSnackBar();
-        }
-
-        mInitialsArray = musicIndexArray;
-
-        mMusicListAdapter.setPlayedPosition(currentIndex);
-
-        mRecyclerView.scrollToPosition(currentIndex - 3);
-    }
-
-    int a;
-
-    /** 由于某些原因,例如歌曲不存在等导致播放自动跳到下一首.这种时候需要这里同步位置 */
-    @Override
-    public void onItemChanged(int currentIndex) {
-        mMusicListAdapter.setPlayedPosition(currentIndex);
-
-        Log.w("MusicList", "onItemChanged: " + (++a));
+    public void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
     }
 
     /** 用户滑动列表右边的QuickBar,滚动至对应的界面 */
@@ -110,10 +87,39 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
         mRecyclerView.scrollToPosition(i);
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onDataChangedEvent(MusicDispatcher.DataChangedEvent event){
+        if (mMusicListAdapter == null) {
+            mMusicListAdapter = new MusicListAdapter();
+            mMusicListAdapter.setData(event.mMusicBeanArray);
+            mRecyclerView.setAdapter(mMusicListAdapter);
+        } else {
+            mMusicListAdapter.notifyDataSetChanged();
+
+            makeSnackBar();
+            mSnackbar.setText("音乐列表更新了~ 当前共有 " + event.mMusicBeanArray.size() + " 首歌曲");
+            /* 扫描歌曲后必然后走该方法，所以将SnackBar的销毁工作也在这里进行 */
+            cancelSnackBar();
+        }
+
+        mInitialsArray = event.mMusicIndexArray;
+
+        mMusicListAdapter.setPlayedPosition(event.mCurrentIndex);
+
+        mRecyclerView.scrollToPosition(event.mCurrentIndex - 3);
+    }
+
+    /** 由于某些原因,例如歌曲不存在等导致播放自动跳到下一首.这种时候需要这里同步位置 */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onItemChangedEvent(MusicDispatcher.ItemChangedEvent event) {
+        mMusicListAdapter.setPlayedPosition(event.mCurrentIndex);
+    }
+
     /** 当用户点击某个条目时,通知调度者播放指定的歌曲 */
-    @Override
-    public void onItemClickListener(View v, MusicBean music, int position) {
-        mMusicDispatcher.playSelectedItem(position);
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onItemCLickEvent(MusicListAdapter.MusicItemClickedEvent event){
+        mMusicDispatcher.playSelectedItem(event.mPosition);
+        Log.w(TAG, "onItemCLickEvent: 收到事件, MusicBean = "+event.mMusicBean+"; position = "+event.mPosition );
     }
 
     /////// ToolBar初始化 //////
@@ -130,12 +136,7 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
                 makeSnackBar();
                 mSnackbar.setText("正在扫描本地目录...").show();
 
-                mMusicDispatcher.scanSdcardMusics(new SearchMusics.OnMusicSearchingListener() {
-                    @Override
-                    public void foundMusic(MusicBean musicBean) {
-                        mSnackbar.setText("找到歌曲: " + musicBean.getMusicName() + " - " + musicBean.getSinger()).show();
-                    }
-                });
+                mMusicDispatcher.scanSdcardMusics(musicBean -> mSnackbar.setText("找到歌曲: " + musicBean.getMusicName() + " - " + musicBean.getSinger()).show());
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -149,15 +150,12 @@ public class MusicListFragment extends Fragment implements OnMusicDispatchDataCh
     }
 
     private void cancelSnackBar() {
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (mSnackbar != null) {
-                    if (mSnackbar.isShown()) {
-                        mSnackbar.dismiss();
-                    }
-                    mSnackbar = null;
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (mSnackbar != null) {
+                if (mSnackbar.isShown()) {
+                    mSnackbar.dismiss();
                 }
+                mSnackbar = null;
             }
         }, 3000);
     }

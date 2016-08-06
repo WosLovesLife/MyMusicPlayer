@@ -27,9 +27,6 @@ public class MusicDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-//        db.execSQL(DatabaseConstants.SQL_MUSIC_TABLE_CREATE);
-//        Log.w(TAG, "MusicDatabase onCreate: " );
-
         db.execSQL("create table " + MusicTable.MUSIC_TABLE_NAME + " ( " +
                 MusicTable.Cols.MUSIC_FIELD_KEY + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 MusicTable.Cols.MUSIC_FIELD_PATH + " char(150) unique not null, " +

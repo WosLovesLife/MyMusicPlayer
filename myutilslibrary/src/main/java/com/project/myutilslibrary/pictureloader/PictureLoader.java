@@ -103,23 +103,6 @@ public class PictureLoader {
         mMemoryThumbnailCache.deleteCache(picPath);
     }
 
-
-    /*public void setCacheBitmapFromMp3Idv3(final String picPath, final ImageView imageView) {
-        if (imageView.getMeasuredHeight() == 0) {
-            imageView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    imageView.getViewTreeObserver().removeOnPreDrawListener(this);
-
-                    getCacheBitmap(picPath, imageView);
-                    return true;
-                }
-            });
-        } else {
-            getCacheBitmap(picPath, imageView);
-        }
-    }*/
-
     public void setCacheBitmapFromMp3Idv3(final OnPictureLoadHandleListener listener, final String picPath, final View imageView, int imageViewWidth, int imageViewHeight) {
         if (picPath == null) {
             return;

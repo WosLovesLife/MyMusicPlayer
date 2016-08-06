@@ -12,7 +12,8 @@ import com.project.myutilslibrary.mp3agic.UnsupportedTagException;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.exception.PlayerException;
 import com.zhangheng.mymusicplayer.global.Constants;
-import com.zhangheng.mymusicplayer.listener.OnMusicDispatchDataChangedListener;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public class MusicDispatcher {
     private static MusicDispatcher sMusicDispatcher;
     private Context mContext;
 
-    private OnMusicDispatchDataChangedListener mDataChangedListenerList;
+//    private OnMusicDispatchDataChangedListener mDataChangedListenerList;
 
     /** 当前的音乐列表集合 */
     private static ArrayList<MusicBean> sMusicBeanArray;
@@ -36,8 +37,29 @@ public class MusicDispatcher {
     private static ArrayList<String> sMusicIndexArray;
 
     /** 当前的索引 = loopIndex % 数据集合.size() */
-    private int mCurrentIndex = -1;
+    private static int sCurrentIndex = -1;
     private MusicBean mCurrentMusic;
+
+    // Events
+    public class DataChangedEvent{
+        public ArrayList<MusicBean> mMusicBeanArray;
+        public ArrayList<String> mMusicIndexArray;
+        public int mCurrentIndex;
+
+        public DataChangedEvent(ArrayList<MusicBean> sMusicBeanArray, ArrayList<String> sMusicIndexArray, int currentIndex) {
+            this.mMusicBeanArray = sMusicBeanArray;
+            this.mMusicIndexArray = sMusicIndexArray;
+            this.mCurrentIndex = currentIndex;
+        }
+    }
+
+    public class ItemChangedEvent{
+        public int mCurrentIndex;
+
+        public ItemChangedEvent(int currentIndex) {
+            this.mCurrentIndex = currentIndex;
+        }
+    }
 
     private MusicDispatcher(Context context) {
         mContext = context;
@@ -49,12 +71,8 @@ public class MusicDispatcher {
         if (sMusicDispatcher == null) {
             sMusicDispatcher = new MusicDispatcher(context.getApplicationContext());
         }
-        return sMusicDispatcher;
-    }
 
-    public void setOnMusicDispatchDataChangedListener(OnMusicDispatchDataChangedListener onMusicDispatchDataChangedListener) {
-        mDataChangedListenerList = onMusicDispatchDataChangedListener;
-        notifyDataSetChanged();
+        return sMusicDispatcher;
     }
 
     private void initData() {
@@ -72,9 +90,7 @@ public class MusicDispatcher {
     }
 
     private void notifyDataSetChanged() {
-        if (mDataChangedListenerList != null) {
-            mDataChangedListenerList.onDispatchDataChanged(sMusicBeanArray, sMusicIndexArray, mCurrentIndex);
-        }
+        EventBus.getDefault().post(new DataChangedEvent(sMusicBeanArray,sMusicIndexArray,sCurrentIndex));
     }
 
     private void notifyFoundLastSavedMusic(MusicBean musicBean) {
@@ -83,65 +99,57 @@ public class MusicDispatcher {
     }
 
     private void getMusicListFromDatabase() {
-        SearchMusics.getMusicListFromDatabase(mContext, new SearchMusics.OnFinishedListener() {
-            @Override
-            public void onFinished(ArrayList<MusicBean> musicBeanList, ArrayList<String> musicIndexList, int savedIndex) {
-                if (musicBeanList.size() > savedIndex) {
-                    mCurrentIndex = savedIndex;
+        SearchMusics.getMusicListFromDatabase(mContext, (musicBeanList, musicIndexList, savedIndex) -> {
+            if (musicBeanList.size() > savedIndex) {
+                sCurrentIndex = savedIndex;
 
-                    notifyFoundLastSavedMusic(musicBeanList.get(savedIndex));
-                }
-                refreshMusicArray(musicBeanList, musicIndexList);
+                notifyFoundLastSavedMusic(musicBeanList.get(savedIndex));
             }
+            refreshMusicArray(musicBeanList, musicIndexList);
         });
     }
 
     public void scanSdcardMusics(SearchMusics.OnMusicSearchingListener onMusicSearchingListener) {
-        SearchMusics.getMusicListFromSdCard(mContext, new SearchMusics.OnFinishedListener() {
-            @Override
-            public void onFinished(ArrayList<MusicBean> musicBeanList, ArrayList<String> musicIndexList, int savedIndex) {
-                refreshMusicArray(musicBeanList, musicIndexList);
-                mCurrentIndex = savedIndex;
-            }
+        SearchMusics.getMusicListFromSdCard(mContext, (musicBeanList, musicIndexList, savedIndex) -> {
+            refreshMusicArray(musicBeanList, musicIndexList);
+            sCurrentIndex = savedIndex;
         },onMusicSearchingListener);
     }
 
     public void playSelectedItem(int position) throws PlayerException {
-        mCurrentIndex = position;
-        Log.w(TAG, "playSelectedItem: mCurrentIndex: " + mCurrentIndex);
+        sCurrentIndex = position;
+        Log.w(TAG, "playSelectedItem: sCurrentIndex: " + sCurrentIndex);
         informPlay();
     }
 
     public void getDefault() {
-        Log.w(TAG, "playSelectedItem: getDefault: " + mCurrentIndex);
+        Log.w(TAG, "playSelectedItem: getDefault: " + sCurrentIndex);
         informPlay();
     }
 
     public void getPre() {
-        Log.w(TAG, "playSelectedItem: getPre: " + mCurrentIndex);
-        if (--mCurrentIndex < 0) {
-            mCurrentIndex = sMusicIndexArray.size() - 1;
+        Log.w(TAG, "playSelectedItem: getPre: " + sCurrentIndex);
+        if (--sCurrentIndex < 0) {
+            sCurrentIndex = sMusicIndexArray.size() - 1;
         }
         informPlay();
     }
 
     public void getNext() {
-        Log.w(TAG, "playSelectedItem: getNext: " + mCurrentIndex);
-        if (++mCurrentIndex >= sMusicBeanArray.size()) {
-            mCurrentIndex = 0;
+        Log.w(TAG, "playSelectedItem: getNext: " + sCurrentIndex);
+        if (++sCurrentIndex >= sMusicBeanArray.size()) {
+            sCurrentIndex = 0;
         }
         informPlay();
     }
 
     private void informPlay() {
         if (sMusicBeanArray.size() > 0) {
-            mCurrentMusic = sMusicBeanArray.get(mCurrentIndex);
+            mCurrentMusic = sMusicBeanArray.get(sCurrentIndex);
             Controller.newInstance(mContext).changeMusicTo(mCurrentMusic);
 
-            if (mDataChangedListenerList != null) {
-                mDataChangedListenerList.onItemChanged(mCurrentIndex);
-            }
-            Log.w(TAG, "informPlay: mDataChangedListenerList.onItemChanged(mCurrentIndex): " + mCurrentIndex);
+            EventBus.getDefault().post(new ItemChangedEvent(sCurrentIndex));
+            Log.w(TAG, "informPlay: mDataChangedListenerList.onItemChanged(sCurrentIndex): " + sCurrentIndex);
 
             saveMusic();
         } else {
@@ -150,22 +158,23 @@ public class MusicDispatcher {
 
     }
 
+    /** 通知事件 */
+    public void notifyMusicsEventPost(){
+        notifyDataSetChanged();
+    }
+
     public void saveMusic() {
-        SharedPreferenceTool.saveInteger(mContext, Constants.KEY_LAST_SAVED_MUSIC, mCurrentIndex);
+        SharedPreferenceTool.saveInteger(mContext, Constants.KEY_LAST_SAVED_MUSIC, sCurrentIndex);
     }
 
     public void getLrc() {
-        MusicBean musicBean = sMusicBeanArray.get(mCurrentIndex);
+        MusicBean musicBean = sMusicBeanArray.get(sCurrentIndex);
         try {
             Mp3File mp3File = new Mp3File(musicBean.getPath());
             if (mp3File.hasId3v2Tag()) {
                 ID3v2 id3v2Tag = mp3File.getId3v2Tag();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (UnsupportedTagException e) {
-            e.printStackTrace();
-        } catch (InvalidDataException e) {
+        } catch (IOException | UnsupportedTagException | InvalidDataException e) {
             e.printStackTrace();
         }
     }

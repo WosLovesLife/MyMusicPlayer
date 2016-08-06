@@ -44,8 +44,6 @@ public class SearchMusics {
     private SearchMusics() {
     }
 
-    ;
-
     /** 根据提供的ListView<MusicBean> 生成对应的索引ArrayList<String> */
     public static ArrayList<String> buildIndexArray(ArrayList<MusicBean> arrayList) {
         ArrayList<String> indexArray = new ArrayList<>();
@@ -79,9 +77,6 @@ public class SearchMusics {
 
         long lastUpdatedTime = SharedPreferenceTool.getLong(sContext, KEY_LAST_DATABASE_UPDATED_TIME, 0L);
 
-//        Log.w(TAG, "currentTime: " + currentTime + "; lastUpdatedTime: " + lastUpdatedTime);
-//        Log.w(TAG, "check4updateDatabase: 准备扫描SD卡");
-
         if (SdcardEnableUtils.isEnable()) {
 
             AsyncTask4ScanSdcard asyncTask4ScanSdcard = new AsyncTask4ScanSdcard();
@@ -97,8 +92,6 @@ public class SearchMusics {
 
     /** 异步任务,在子线程中读取数据库之前保存的歌曲列表. */
     private static class AsyncTask4ScanSdcard extends AsyncTask<Void, Void, ArrayList<MusicBean>> {
-
-        int count;
         private ArrayList<String> mTempIndexArray;
         private ArrayList<MusicBean> mTempMusicBeansArray;
 
@@ -107,7 +100,6 @@ public class SearchMusics {
         protected ArrayList<MusicBean> doInBackground(Void[] params) {
             mTempMusicBeansArray = new ArrayList<>();
             File sdDir = Environment.getExternalStorageDirectory();
-//            Log.w(TAG, "doInBackground: externalStoragePublicDirectory： " + sdDir.canRead());
             if (SdcardEnableUtils.isEnable()) {
                 scanSdcard(sdDir);
                 Collections.sort(mTempMusicBeansArray);
@@ -129,7 +121,6 @@ public class SearchMusics {
             for (File file : files) {
                 if (file.isDirectory()) {
                     scanSdcard(file);
-//                    Log.w(TAG, "scanSdcard: scanSdcard 执行了:" + (count++));
                 } else {
                     filterFile(file);
                 }
@@ -149,8 +140,7 @@ public class SearchMusics {
             String filePath = file.getAbsolutePath();
             if (filePath.endsWith(".mp3")) {
                 // 获取到文件名
-                String unknownName = filePath.substring(filePath.lastIndexOf("/") + 1, filePath.lastIndexOf("."));
-                String musicName = unknownName;
+                String musicName = filePath.substring(filePath.lastIndexOf("/") + 1, filePath.lastIndexOf("."));
                 String singer = "未知";
                 try {
                     Mp3File m = new Mp3File(filePath);
@@ -167,17 +157,13 @@ public class SearchMusics {
                         }
                         final MusicBean musicBean = new MusicBean(-1, musicName, singer, filePath, PinyinUtils.toPinyin(musicName), lengthInSeconds);
 
-                        new Handler(sContext.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (sOnMusicSearchingListener != null) {
-                                    sOnMusicSearchingListener.foundMusic(musicBean);
-                                }
+                        new Handler(sContext.getMainLooper()).post(() -> {
+                            if (sOnMusicSearchingListener != null) {
+                                sOnMusicSearchingListener.foundMusic(musicBean);
                             }
                         });
                         mTempMusicBeansArray.add(musicBean);
                     }
-//                    Log.w(TAG, "scanSdcard: getLengthInSeconds: " + lengthInSeconds);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -3,7 +3,6 @@ package com.zhangheng.mymusicplayer.activity;
 import android.app.Fragment;
 import android.content.Intent;
 import android.os.Handler;
-import android.util.Log;
 
 import com.project.myutilslibrary.ServiceStateUtils;
 import com.zhangheng.mymusicplayer.R;
@@ -39,14 +38,11 @@ public class SplashActivity extends BaseActivity {
 
     private void delayed() {
 
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Log.w(TAG, "delayed run: " );
-                enterMainPage();
+        new Handler().postDelayed(() -> {
+            enterMainPage();
 
-                overridePendingTransition(R.anim.alpha_dialog_show, R.anim.alpha_dialog_hide);
-            }
+            /* 转场动画 */
+            overridePendingTransition(R.anim.alpha_dialog_show, R.anim.alpha_dialog_hide);
         }, 500);
     }
 

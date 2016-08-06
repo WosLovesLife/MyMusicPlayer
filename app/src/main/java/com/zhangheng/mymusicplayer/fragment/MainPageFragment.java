@@ -34,10 +34,14 @@ import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.activity.MusicListActivity;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.engine.Controller;
-import com.zhangheng.mymusicplayer.listener.OnPlayerStateChangedListener;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.Unbinder;
 
 /**
@@ -65,27 +69,21 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     /** 进度条,拖动改变播放进度 */
     @BindView(R.id.progress_mainpageSeekBar)
     SeekBar mProgress_sb;
-
     /** 播放/暂停键 */
     @BindView(R.id.play_mainpageButton)
     ImageButton mPlay_bt;
-
     /** 上一首键 */
     @BindView(R.id.pre_mainpageButton)
     ImageButton mPre_bt;
-
     /** 下一首键 */
     @BindView(R.id.next_mainpageButton)
     ImageButton mNext_bt;
-
     /** 显示当前播放的时间节点的TextView */
     @BindView(R.id.currentProgress_TextView)
     TextView mProgress_tv;
-
     /** 显示歌曲总时长的TextView */
     @BindView(R.id.duration_TextView)
     TextView mDuration_tv;
-
     /** 专辑图片的组件 */
     @BindView(R.id.albumPicture)
     ImageView mAlbumPicture;
@@ -93,7 +91,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 
     /** 状态值,如果SeekBar在拖动中,暂停SeekBar的自动进度移动 */
     private boolean isSeekBarHeld;
-
     /** 显示专辑图片的控件的尺寸,用于决定图片的大小 */
     private int mAlbumPictureSize;
 
@@ -103,7 +100,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mBind = ButterKnife.bind(getActivity());
+        EventBus.getDefault().register(this);
 
         setHasOptionsMenu(true);// 告知FragmentManager本页面包含Menu
         setRetainInstance(true);// 保留Fragment状态,在Activity销毁重建的过程中不销毁Fragment
@@ -113,15 +110,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mView = inflater.inflate(R.layout.fragment_main_page, container, false);
-
-        mNext_bt = (ImageButton) mView.findViewById(R.id.next_mainpageButton);
-        mPre_bt = (ImageButton) mView.findViewById(R.id.pre_mainpageButton);
-        mPlay_bt = (ImageButton) mView.findViewById(R.id.play_mainpageButton);
-        mProgress_sb = (SeekBar) mView.findViewById(R.id.progress_mainpageSeekBar);
-        mDuration_tv = (TextView) mView.findViewById(R.id.duration_TextView);
-        mProgress_tv = (TextView) mView.findViewById(R.id.currentProgress_TextView);
-        mAlbumPicture = (ImageView) mView.findViewById(R.id.albumPicture);
-
+        mBind = ButterKnife.bind(this,mView);
         return mView;
     }
 
@@ -135,7 +124,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         mController = Controller.newInstance(getActivity());
 
         /** 监听歌曲信息和播放状态 */
-        mController.setOnPlayerStateChangedListener(new MainPagePlayerStateChangedListener());
+        mController.notifyPlayerState();
 
         setViewFunction();
 
@@ -147,9 +136,9 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     public void onDestroy() {
         super.onDestroy();
 
-        mController.removeOnPlayerStateChangedListener();
-
         mBind.unbind();
+
+        EventBus.getDefault().unregister(this);
 
         Log.w(TAG, "onDestroy: ");
     }
@@ -185,15 +174,11 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     }
 
     private void setViewFunction() {
-        mPlay_bt.setOnClickListener(this);
-        mPre_bt.setOnClickListener(this);
-        mNext_bt.setOnClickListener(this);
-
-        MainPageSeekBarChangeListener mainPagePlayerStateChangedListener = new MainPageSeekBarChangeListener();
-        mProgress_sb.setOnSeekBarChangeListener(mainPagePlayerStateChangedListener);
+        mProgress_sb.setOnSeekBarChangeListener(new MainPageSeekBarChangeListener());
     }
 
     @Override
+    @OnClick({R.id.play_mainpageButton,R.id.pre_mainpageButton,R.id.next_mainpageButton})
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.play_mainpageButton:
@@ -232,111 +217,107 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     }
     ///////////== 关于ActionBar的方法end==/////////////
 
-    ///////////==注册Controller的监听接口start==/////////////
-    private class MainPagePlayerStateChangedListener implements OnPlayerStateChangedListener {
+    // Event处理
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onChangeMusicEvent(Controller.ChangeMusicEvent event) {
+        Controller.BaseEvent baseEvent = event.mBaseEvent;
+        disposeStateChanged(baseEvent.musicBean,baseEvent.isPlaying,baseEvent.duration,baseEvent.progress);
 
-        @Override
-        public void onChangeMusic(boolean isPlaying, int duration, int progress, MusicBean musicBean) {
-            onPlayStateChanged(isPlaying, duration, progress, musicBean);
+        PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
+                bitmap -> setPlayerSkin(bitmap),
+                baseEvent.musicBean.getPath(),
+                mAlbumPicture,
+                mAlbumPictureSize,
+                mAlbumPictureSize);
+    }
 
-            PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
-                    new PictureLoader.OnPictureLoadHandleListener() {
-                        @Override
-                        public void onPictureLoadComplete(Bitmap bitmap) {
-                            setPlayerSkin(bitmap);
-                        }
-                    },
-                    musicBean.getPath(),
-                    mAlbumPicture,
-                    mAlbumPictureSize,
-                    mAlbumPictureSize);
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onPlayStateChangedEvent(Controller.PlayerStateChangedEvent event) {
+        Controller.BaseEvent baseEvent = event.mBaseEvent;
+        disposeStateChanged(baseEvent.musicBean, baseEvent.isPlaying, baseEvent.duration, baseEvent.progress);
+    }
+
+    private void disposeStateChanged(MusicBean musicBean, boolean isPlaying, int duration, int progress) {
+        AppCompatActivity a = (AppCompatActivity) getActivity();
+        if (a == null) return;
+
+        ActionBar supportActionBar = a.getSupportActionBar();
+        if (supportActionBar != null) {
+            supportActionBar.setTitle(musicBean.getMusicName());
+            supportActionBar.setSubtitle(musicBean.getSinger());
         }
 
-        @Override
-        public void onPlayStateChanged(boolean isPlaying, int duration, int progress, MusicBean musicBean) {
-            AppCompatActivity a = (AppCompatActivity) getActivity();
-            if (a == null) return;
+        updateViewState(isPlaying, duration, progress);
+        Log.w(TAG, "onPlayStateChanged: ");
+    }
 
-            ActionBar supportActionBar = a.getSupportActionBar();
-            if (supportActionBar != null) {
-                supportActionBar.setTitle(musicBean.getMusicName());
-                supportActionBar.setSubtitle(musicBean.getSinger());
-            }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onCompleteEvent(Controller.CompleteEvent event) {
+        updateViewState(false, 100, 0);
+    }
 
-            updateViewState(isPlaying, duration, progress);
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void updateProgress(Controller.UpdateProgressEvent event) {
+        if (!isSeekBarHeld) {
+            mProgress_sb.setProgress(event.mCurrentProgress);
 
-            Log.w(TAG, "onPlayStateChanged: ");
-        }
-
-        @Override
-        public void onComplete() {
-            updateViewState(false, 100, 0);
-        }
-
-        @Override
-        public void updateProgress(int currentProgress) {
-            if (!isSeekBarHeld) {
-                mProgress_sb.setProgress(currentProgress);
-
-                String pro = (String) DateFormat.format("mm:ss", currentProgress);
-                mProgress_tv.setText(pro);
-                Log.w(TAG, "updateViewState: pro: " + pro);
-            }
-        }
-
-        private void updateViewState(boolean isPlaying, int maxProgress, int currentProgress) {
-            /* 改变播放按钮的状态, 播放或者暂停 */
-            mPlay_bt.setImageResource(isPlaying ? R.drawable.selector_btn_pause : R.drawable.selector_btn_play);
-
-            mProgress_sb.setMax(maxProgress);   // 最大进度
-            mProgress_sb.setProgress(currentProgress);  // 当前播放进度
-
-            String dur = (String) DateFormat.format("mm:ss", maxProgress);  // 设置歌曲失常
-            mDuration_tv.setText(dur);
-
-            String pro = (String) DateFormat.format("mm:ss", currentProgress);  // 设置当前播放时常
+            String pro = (String) DateFormat.format("mm:ss", event.mCurrentProgress);
             mProgress_tv.setText(pro);
+            Log.w(TAG, "updateViewState: pro: " + pro);
+        }
+    }
+
+    private void updateViewState(boolean isPlaying, int maxProgress, int currentProgress) {
+        /* 改变播放按钮的状态, 播放或者暂停 */
+        mPlay_bt.setImageResource(isPlaying ? R.drawable.selector_btn_pause : R.drawable.selector_btn_play);
+
+        mProgress_sb.setMax(maxProgress);   // 最大进度
+        mProgress_sb.setProgress(currentProgress);  // 当前播放进度
+
+        String dur = (String) DateFormat.format("mm:ss", maxProgress);  // 设置歌曲失常
+        mDuration_tv.setText(dur);
+
+        String pro = (String) DateFormat.format("mm:ss", currentProgress);  // 设置当前播放时常
+        mProgress_tv.setText(pro);
+    }
+
+    /** 设置播放器的皮肤, 专辑图片和背景图片 */
+    private void setPlayerSkin(Bitmap bitmap) {
+
+        Bitmap bgBitmap = bitmap;
+        if (bitmap == null) {
+            bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.player_default_album);
+            bgBitmap = BitmapFactory.decodeResource(getActivity().getResources(), R.drawable.playpage_background);
         }
 
-        /** 设置播放器的皮肤, 专辑图片和背景图片 */
-        private void setPlayerSkin(Bitmap bitmap) {
+        View bgView = ((MainPageActivity) getActivity()).getBgView();
+        Drawable sourceBg = bgView.getBackground();
 
-            Bitmap bgBitmap = bitmap;
-            if (bitmap == null) {
-                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.player_default_album);
-                bgBitmap = BitmapFactory.decodeResource(getActivity().getResources(), R.drawable.playpage_background);
+        if (mIsReshow) {
+            mIsReshow = false;
+
+            /* 设置不带动画的专辑图片 */
+            mAlbumPicture.setImageBitmap(bitmap);
+            /* 设置不带动画的背景模糊图片 */
+            BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 30);
+            bgView.setBackground(shadowBg);
+        } else {
+            /* 设置带平滑过渡动画的专辑图片 */
+            Drawable drawable = mAlbumPicture.getDrawable();
+            if (drawable == null) {
+                drawable = new BitmapDrawable(getResources(),BitmapFactory.decodeResource(getResources(), android.R.color.white));
             }
+            TransitionDrawable albumPictureWithShadow = getTransitionDrawable(drawable, new BitmapDrawable(getResources(),bitmap), 520);
+            mAlbumPicture.setImageDrawable(albumPictureWithShadow);
 
-            View bgView = ((MainPageActivity) getActivity()).getBgView();
-            Drawable sourceBg = bgView.getBackground();
-
-            if (mIsReshow) {
-                mIsReshow = false;
-
-                /* 设置不带动画的专辑图片 */
-                mAlbumPicture.setImageDrawable(new BitmapDrawable(bitmap));
-                /* 设置不带动画的背景模糊图片 */
-                BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 30);
-                bgView.setBackground(shadowBg);
-            } else {
-
-                /* 设置带平滑过渡动画的专辑图片 */
-                Drawable drawable = mAlbumPicture.getDrawable();
-                if (drawable == null) {
-                    drawable = new BitmapDrawable(BitmapFactory.decodeResource(getResources(), android.R.color.white));
-                }
-                TransitionDrawable albumPictureWithShadow = getTransitionDrawable(drawable, new BitmapDrawable(bitmap), 520);
-                mAlbumPicture.setImageDrawable(albumPictureWithShadow);
-
-                /* 设置带平滑过渡动画的背景模糊图片 */
-                if (sourceBg == null) {
-                    sourceBg = new BitmapDrawable(BitmapFactory.decodeResource(getResources(), android.R.color.white));
-                }
-               /* 对原图片进行高斯模糊处理 */
-                BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 50);
-                TransitionDrawable transitionDrawable = getTransitionDrawable(sourceBg, shadowBg, 520);
-                bgView.setBackground(transitionDrawable);
+            /* 设置带平滑过渡动画的背景模糊图片 */
+            if (sourceBg == null) {
+                sourceBg = new BitmapDrawable(getResources(),BitmapFactory.decodeResource(getResources(), android.R.color.white));
             }
+            /* 对原图片进行高斯模糊处理 */
+            BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 50);
+            TransitionDrawable transitionDrawable = getTransitionDrawable(sourceBg, shadowBg, 520);
+            bgView.setBackground(transitionDrawable);
         }
     }
 
