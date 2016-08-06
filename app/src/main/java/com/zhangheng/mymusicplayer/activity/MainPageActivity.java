@@ -1,6 +1,7 @@
 package com.zhangheng.mymusicplayer.activity;
 
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -11,6 +12,7 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -32,7 +34,7 @@ import java.lang.reflect.Field;
 /**
  * Created by zhangH on 2016/4/30.
  */
-public class MainPageActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainPageActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = "MainPageActivity";
     private static final String EXTRA_KILL_ACTIVITIES = "extra_kill_activities";
@@ -52,22 +54,17 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
         return killAllActivityIntent;
     }
 
-    /**
-     * 如果该Activity启动时携带结束意图, 则结束掉本Activity,
-     * 因为该Intent规定的启动模式是FLAG_ACTIVITY_NEW_TASK,
-     * 所以该Activity结束也代表结束了整个任务栈
-     */
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.w(TAG, "onCreate: ");
+        setContentView(R.layout.drawer_main);
 
-        if (savedInstanceState != null) {
-            String string = savedInstanceState.getString(EXTRA_KILL_ACTIVITIES);
-            if (TextUtils.equals(string, EXTRA_KILL_ACTIVITIES_VALUE)) {
-                finish();
-            }
-        }
+        killSelf(savedInstanceState);
+
+        initView();
+        bindToolbarAndDrawer();
+        initFragment();
     }
 
     @Override
@@ -79,22 +76,39 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
 
         if (extras == null) return;
 
-        String string = extras.getString(EXTRA_KILL_ACTIVITIES);
-        if (TextUtils.equals(string, EXTRA_KILL_ACTIVITIES_VALUE)) {
-            finish();
+        killSelf(extras);
+    }
+
+    /**
+     * 如果该Activity启动时携带结束意图, 则结束掉本Activity,
+     * 因为该Intent规定的启动模式是FLAG_ACTIVITY_NEW_TASK,
+     * 所以该Activity结束也代表结束了整个任务栈
+     */
+    private void killSelf(Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            String string = savedInstanceState.getString(EXTRA_KILL_ACTIVITIES);
+            if (TextUtils.equals(string, EXTRA_KILL_ACTIVITIES_VALUE)) {
+                finish();
+            }
         }
     }
 
-    @Override
-    protected int inflateView() {
-        return R.layout.drawer_main;
+    protected void initView() {
+        mPlayerBg = (CoordinatorLayout) findViewById(R.id.playerMainPageBg);
+
+        /* 单独设置Toolbar的相关状态 */
+        AppBarLayout appBar = (AppBarLayout) findViewById(R.id.app_bar_layout);
+        if (appBar != null) {
+
+            /** 设置Toolbar的背景颜色 */
+            appBar.setBackgroundResource(R.drawable.shape_toolbar_bg);
+            appBar.setTargetElevation(0);
+        }
     }
 
-    @Override
-    protected void bindToolbarAndDrawer(Toolbar toolbar) {
-        super.bindToolbarAndDrawer(toolbar);
-
+    protected void bindToolbarAndDrawer() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
             sinkStatusBar(toolbar);
@@ -109,7 +123,7 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
 
         /** 加载Drawer导航组件,注册事件监听 */
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        if (navigationView != null){
+        if (navigationView != null) {
             navigationView.setNavigationItemSelectedListener(this);
 
             if (((MusicApp) getApplication()).isOffTimer()) {
@@ -118,37 +132,28 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
         }
     }
 
-    @Override
-    protected void initView() {
-        super.initView();
+    protected void initFragment() {
+        FragmentManager fm = getFragmentManager();
+        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
 
-        mPlayerBg = (CoordinatorLayout) findViewById(R.id.playerMainPageBg);
-
-        /* 单独设置Toolbar的相关状态 */
-        AppBarLayout appBar = (AppBarLayout) findViewById(R.id.app_bar_layout);
-        if (appBar != null) {
-
-            /** 设置Toolbar的背景颜色 */
-            appBar.setBackgroundResource(R.drawable.shape_toolbar_bg);
-            appBar.setTargetElevation(0);
+        if (fragment == null) {
+            fragment = new MainPageFragment();
+            fm.beginTransaction().add(R.id.fragment_container, fragment).commit();
         }
     }
 
     /** 设置定时停止播放的状态监听器,实时显示倒计时 */
     private void updateOffTimer(final MenuItem item) {
-        mOffTimerListener = new OnOffTimerListener() {
-            @Override
-            public void onOffTimer(long timerDate) {
-                String result = timerDate / DateUtils.SECOND_IN_MILLIS + "s 后停止";
+        mOffTimerListener = (OnOffTimerListener) timerDate -> {
+            String result = timerDate / DateUtils.SECOND_IN_MILLIS + "s 后停止";
 
-                if (timerDate > DateUtils.HOUR_IN_MILLIS) {
-                    result = DateFormat.format("hh:mm:ss", timerDate).toString();
-                } else if (timerDate > DateUtils.MINUTE_IN_MILLIS) {
-                    result = DateFormat.format("mm:ss", timerDate).toString();
-                }
-
-                item.setTitle(result);
+            if (timerDate > DateUtils.HOUR_IN_MILLIS) {
+                result = DateFormat.format("hh:mm:ss", timerDate).toString();
+            } else if (timerDate > DateUtils.MINUTE_IN_MILLIS) {
+                result = DateFormat.format("mm:ss", timerDate).toString();
             }
+
+            item.setTitle(result);
         };
         ((MusicApp) getApplication()).setOnOffTimerListener(mOffTimerListener);
     }
@@ -181,7 +186,7 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        if (drawer!=null && drawer.isDrawerOpen(GravityCompat.START)) {
+        if (drawer != null && drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
@@ -207,11 +212,6 @@ public class MainPageActivity extends BaseActivity implements NavigationView.OnN
 
         ((MusicApp) getApplication()).removeOnOffTimerListener();
         Log.w(TAG, "onDestroy: ");
-    }
-
-    @Override
-    protected Fragment initFragment() {
-        return new MainPageFragment();
     }
 
     public View getBgView() {

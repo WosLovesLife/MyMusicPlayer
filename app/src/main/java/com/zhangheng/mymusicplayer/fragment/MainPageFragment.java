@@ -50,7 +50,7 @@ import butterknife.Unbinder;
  * 和Controller沟通 通过在此页面所做的控制,通过Controller做逻辑处理
  * Controller通过回调方法将播放状态返回给本类更新UI
  */
-public class MainPageFragment extends Fragment implements View.OnClickListener {
+public class MainPageFragment extends Fragment implements View.OnClickListener{
 
     private static final String TAG = "MainPageFragment";
 
@@ -110,7 +110,9 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mView = inflater.inflate(R.layout.fragment_main_page, container, false);
+        
         mBind = ButterKnife.bind(this,mView);
+
         return mView;
     }
 
@@ -224,7 +226,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
         disposeStateChanged(baseEvent.musicBean,baseEvent.isPlaying,baseEvent.duration,baseEvent.progress);
 
         PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
-                bitmap -> setPlayerSkin(bitmap),
+                this::setPlayerSkin,
                 baseEvent.musicBean.getPath(),
                 mAlbumPicture,
                 mAlbumPictureSize,
