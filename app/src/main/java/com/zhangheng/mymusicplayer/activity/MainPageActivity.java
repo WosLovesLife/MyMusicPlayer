@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -18,6 +17,7 @@ import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
@@ -27,7 +27,10 @@ import com.zhangheng.mymusicplayer.MusicApp;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.fragment.MainPageFragment;
 import com.zhangheng.mymusicplayer.fragment.OffTimerDialogFragment;
-import com.zhangheng.mymusicplayer.listener.OnOffTimerListener;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.lang.reflect.Field;
 
@@ -40,11 +43,11 @@ public class MainPageActivity extends AppCompatActivity implements NavigationVie
     private static final String EXTRA_KILL_ACTIVITIES = "extra_kill_activities";
     private static final String EXTRA_KILL_ACTIVITIES_VALUE = "com.zhangheng.mymusicplayer.activity.extra_kill_activities_value";
 
+    public static final int REQUEST_CODE_LIST_FRAGMENT = 0;
+
     /** 通过setBackground()设置模糊背景 */
     private CoordinatorLayout mPlayerBg;
-
-    /** 定时器监听器 */
-    OnOffTimerListener mOffTimerListener;
+    private MenuItem mOffTimer;
 
     /** 通过startActivity()该方法返回的Intent来结束该程序的所有Activity */
     public static Intent getIntent2KillAllActivity(Context packageContext) {
@@ -61,6 +64,8 @@ public class MainPageActivity extends AppCompatActivity implements NavigationVie
         setContentView(R.layout.drawer_main);
 
         killSelf(savedInstanceState);
+
+        EventBus.getDefault().register(this);
 
         initView();
         bindToolbarAndDrawer();
@@ -93,22 +98,20 @@ public class MainPageActivity extends AppCompatActivity implements NavigationVie
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().post(this);
+    }
+
     protected void initView() {
         mPlayerBg = (CoordinatorLayout) findViewById(R.id.playerMainPageBg);
-
-        /* 单独设置Toolbar的相关状态 */
-        AppBarLayout appBar = (AppBarLayout) findViewById(R.id.app_bar_layout);
-        if (appBar != null) {
-
-            /** 设置Toolbar的背景颜色 */
-            appBar.setBackgroundResource(R.drawable.shape_toolbar_bg);
-            appBar.setTargetElevation(0);
-        }
     }
 
     protected void bindToolbarAndDrawer() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
             sinkStatusBar(toolbar);
@@ -123,13 +126,8 @@ public class MainPageActivity extends AppCompatActivity implements NavigationVie
 
         /** 加载Drawer导航组件,注册事件监听 */
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        if (navigationView != null) {
-            navigationView.setNavigationItemSelectedListener(this);
-
-            if (((MusicApp) getApplication()).isOffTimer()) {
-                updateOffTimer(navigationView.getMenu().findItem(R.id.nav_off_timer));
-            }
-        }
+        mOffTimer = navigationView.getMenu().findItem(R.id.nav_off_timer);
+        navigationView.setNavigationItemSelectedListener(this);
     }
 
     protected void initFragment() {
@@ -142,20 +140,18 @@ public class MainPageActivity extends AppCompatActivity implements NavigationVie
         }
     }
 
-    /** 设置定时停止播放的状态监听器,实时显示倒计时 */
-    private void updateOffTimer(final MenuItem item) {
-        mOffTimerListener = (OnOffTimerListener) timerDate -> {
-            String result = timerDate / DateUtils.SECOND_IN_MILLIS + "s 后停止";
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onOffTimerEvent(MusicApp.OffTimerEvent event) {
+        long timerDate = event.timerDate;
+        String result = timerDate / DateUtils.SECOND_IN_MILLIS + "s 后停止";
 
-            if (timerDate > DateUtils.HOUR_IN_MILLIS) {
-                result = DateFormat.format("hh:mm:ss", timerDate).toString();
-            } else if (timerDate > DateUtils.MINUTE_IN_MILLIS) {
-                result = DateFormat.format("mm:ss", timerDate).toString();
-            }
+        if (timerDate > DateUtils.HOUR_IN_MILLIS) {
+            result = DateFormat.format("hh:mm:ss", timerDate).toString();
+        } else if (timerDate > DateUtils.MINUTE_IN_MILLIS) {
+            result = DateFormat.format("mm:ss", timerDate).toString();
+        }
 
-            item.setTitle(result);
-        };
-        ((MusicApp) getApplication()).setOnOffTimerListener(mOffTimerListener);
+        mOffTimer.setTitle(result);
     }
 
     /** 设置沉浸式状态栏 */
@@ -198,22 +194,30 @@ public class MainPageActivity extends AppCompatActivity implements NavigationVie
     public boolean onNavigationItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_off_timer:    // 定时器
-                updateOffTimer(item);
-
-                OffTimerDialogFragment.newInstance(mOffTimerListener).show(getSupportFragmentManager(), "OffTimer");
+                OffTimerDialogFragment.newInstance().show(getSupportFragmentManager(), "OffTimer");
                 return true;
         }
         return false;
     }
 
+    ///////////== 关于ActionBar的方法start==/////////////
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        ((MusicApp) getApplication()).removeOnOffTimerListener();
-        Log.w(TAG, "onDestroy: ");
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main_page_list, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_item_list:
+                Intent i = new Intent(this, MusicListActivity.class);
+                this.startActivityForResult(i, REQUEST_CODE_LIST_FRAGMENT);
+                return true;// 表示处理该事件
+        }
+        return super.onOptionsItemSelected(item);
+    }
+    ///////////== 关于ActionBar的方法end==/////////////
     public View getBgView() {
         return mPlayerBg;
     }

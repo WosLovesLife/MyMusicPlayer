@@ -6,8 +6,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -27,6 +29,10 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.Unbinder;
+
 /**
  * 管理歌曲列表界面
  * Created by zhangH on 2016/5/17.
@@ -37,9 +43,14 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
     private MusicListAdapter mMusicListAdapter;
     private MusicDispatcher mMusicDispatcher;
     private ArrayList<String> mInitialsArray;
-    private RecyclerView mRecyclerView;
+
+    // View
     private View mView;
+    @BindView(R.id.recycler_view)
+    RecyclerView mRecyclerView;
+
     private Snackbar mSnackbar;
+    private Unbinder mBind;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,8 +66,12 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         mView = inflater.inflate(R.layout.fragment_list_page, container, false);
 
-        mRecyclerView = (RecyclerView) mView.findViewById(R.id.recycler_view);
+        mBind = ButterKnife.bind(this, mView);
+
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+
+        Toolbar toolbar = (Toolbar) mView.findViewById(R.id.toolbar);
+        ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
         return mView;
     }
@@ -76,6 +91,7 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
     public void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
+        mBind.unbind();
     }
 
     /** 用户滑动列表右边的QuickBar,滚动至对应的界面 */
@@ -144,8 +160,7 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
 
     private void makeSnackBar() {
         if (mSnackbar == null) {
-            View snackBarContainer = mView.findViewById(R.id.snack_bar_container);
-            mSnackbar = Snackbar.make(snackBarContainer, "", Snackbar.LENGTH_INDEFINITE);
+            mSnackbar = Snackbar.make(mView, "", Snackbar.LENGTH_INDEFINITE);
         }
     }
 

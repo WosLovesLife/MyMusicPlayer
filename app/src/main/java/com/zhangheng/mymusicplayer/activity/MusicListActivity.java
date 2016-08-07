@@ -31,6 +31,7 @@ public class MusicListActivity extends BaseActivity {
         return new MusicListFragment();
     }
 
+    /** 更改层级式导航(Toolbar左上角)的返回逻辑, 直接finish本页 */
     @Nullable
     @Override
     public Intent getSupportParentActivityIntent() {

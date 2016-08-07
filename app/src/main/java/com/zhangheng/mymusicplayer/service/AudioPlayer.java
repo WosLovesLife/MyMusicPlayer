@@ -30,7 +30,7 @@ import java.io.IOException;
  * Created by zhangH on 2016/4/30.
  * 负责播放业务的实现, 将播放状态传递出去
  */
-public class AudioPlayer extends Service {
+public class AudioPlayer extends Service  implements IControll{
 
     private static final String TAG = "AudioPlayer";
 
@@ -73,20 +73,12 @@ public class AudioPlayer extends Service {
         mMediaPlayer = new MediaPlayer();
 
         /* 当播放结束后重置进度,并且通知监听者 */
-        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                stopMediaPlayer();
-            }
-        });
+        mMediaPlayer.setOnCompletionListener(mp -> stopMediaPlayer());
 
         /* 当要播放的流准备完成后,通知监听者 */
-        mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                if (mOnMediaPlayerStateChangedListener != null) {
-                    mOnMediaPlayerStateChangedListener.onPrepared();
-                }
+        mMediaPlayer.setOnPreparedListener(mp -> {
+            if (mOnMediaPlayerStateChangedListener != null) {
+                mOnMediaPlayerStateChangedListener.onPrepared();
             }
         });
     }
@@ -152,41 +144,16 @@ public class AudioPlayer extends Service {
     }
 
     /** AIDL通信的Binder对象,不过目前并没有使用多线程通信机制 */
-    private class MyBinder extends Binder implements IControll {
+    public class MyBinder extends Binder {
+        private AudioPlayer mAudioPlayer = AudioPlayer.this;
 
-        @Override
-        public void prepare(String uri) throws IOException {
-            AudioPlayer.this.prepare(uri);
-        }
-
-        @Override
-        public void pause() {
-            AudioPlayer.this.pause();
-        }
-
-        @Override
-        public void resume() {
-            AudioPlayer.this.resume();
-        }
-
-        @Override
-        public void seekProgress(int progress) {
-            AudioPlayer.this.seekProgress(progress);
-        }
-
-        @Override
-        public void setRemoteViewInfo(CharSequence musicName, CharSequence singer, Bitmap album, boolean isPlaying) {
-            AudioPlayer.this.setForegroundService(musicName, singer, album, isPlaying);
-        }
-
-        @Override
-        public void setOnAudioPlayerCreateListener(OnMediaPlayerStateChangedListener onMediaPlayerStateChangedListener) {
-            AudioPlayer.this.setOnAudioPlayerCreateListener(onMediaPlayerStateChangedListener);
+        public AudioPlayer getController(){
+            return mAudioPlayer;
         }
     }
 
     /** 该方法负责加载音乐流,加载完成后调用回调方法通知Controller */
-    private void prepare(String uri) throws IOException {
+    public void prepare(String uri) throws IOException {
         mMediaPlayer.stop();
         mMediaPlayer.reset();
         stopRefreshProgress();
@@ -194,7 +161,7 @@ public class AudioPlayer extends Service {
         mMediaPlayer.prepareAsync();
     }
 
-    private void resume() {
+    public void resume() {
         if (!mMediaPlayer.isPlaying()) {
             mMediaPlayer.start();
             mOnMediaPlayerStateChangedListener.onResume(mMediaPlayer.getDuration(), mMediaPlayer.getCurrentPosition());
@@ -202,7 +169,7 @@ public class AudioPlayer extends Service {
         }
     }
 
-    private void pause() {
+    public void pause() {
         if (mMediaPlayer.isPlaying()) {
             mMediaPlayer.pause();
             mOnMediaPlayerStateChangedListener.onPause(mMediaPlayer.getDuration(), mMediaPlayer.getCurrentPosition());
@@ -210,7 +177,7 @@ public class AudioPlayer extends Service {
         }
     }
 
-    private void seekProgress(int progress) {
+    public void seekProgress(int progress) {
         if (mMediaPlayer.isPlaying()) {
             mMediaPlayer.seekTo(progress);
             mMediaPlayer.start();
@@ -298,7 +265,7 @@ public class AudioPlayer extends Service {
      * @param musicName 歌曲名称
      * @param singer    歌手名称
      */
-    public void setForegroundService(CharSequence musicName, CharSequence singer, Bitmap album, boolean isPlaying) {
+    public void setRemoteViewInfo(CharSequence musicName, CharSequence singer, Bitmap album, boolean isPlaying) {
 
         if (mNotification == null) {
             createNotification();
@@ -328,7 +295,7 @@ public class AudioPlayer extends Service {
         manager.notify(2, mNotification);
     }
 
-    private void setOnAudioPlayerCreateListener(OnMediaPlayerStateChangedListener onMediaPlayerStateChangedListener) {
+    public void setOnAudioPlayerCreateListener(OnMediaPlayerStateChangedListener onMediaPlayerStateChangedListener) {
         mOnMediaPlayerStateChangedListener = onMediaPlayerStateChangedListener;
     }
 

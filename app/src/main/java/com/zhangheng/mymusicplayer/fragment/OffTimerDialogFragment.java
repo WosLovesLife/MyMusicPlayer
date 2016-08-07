@@ -14,23 +14,14 @@ import android.widget.TextView;
 import com.project.myutilslibrary.Dp2Px;
 import com.zhangheng.mymusicplayer.MusicApp;
 import com.zhangheng.mymusicplayer.R;
-import com.zhangheng.mymusicplayer.listener.OnOffTimerListener;
 
 /**
  * Created by zhangH on 2016/6/6.
  */
 public class OffTimerDialogFragment extends DialogFragment implements View.OnClickListener {
 
-    public static final String EXTRA_OFF_TIMER = "OffTimerDialogFragment.extra_off_timer";
-
-    public static OffTimerDialogFragment newInstance(OnOffTimerListener offTimerListener) {
-
-        Bundle args = new Bundle();
-        args.putSerializable(EXTRA_OFF_TIMER, offTimerListener);
-
-        OffTimerDialogFragment fragment = new OffTimerDialogFragment();
-        fragment.setArguments(args);
-        return fragment;
+    public static OffTimerDialogFragment newInstance() {
+        return  new OffTimerDialogFragment();
     }
 
     @NonNull
@@ -102,8 +93,7 @@ public class OffTimerDialogFragment extends DialogFragment implements View.OnCli
                 break;
         }
         if (minute >= 5) {
-            OnOffTimerListener offTimerListener = (OnOffTimerListener) getArguments().getSerializable(EXTRA_OFF_TIMER);
-            ((MusicApp) getActivity().getApplication()).setOffTimer(minute, offTimerListener);
+            ((MusicApp) getActivity().getApplication()).setOffTimer(minute);
         }
         dismiss();
     }

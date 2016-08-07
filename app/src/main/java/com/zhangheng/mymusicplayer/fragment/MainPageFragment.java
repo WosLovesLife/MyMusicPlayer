@@ -1,7 +1,6 @@
 package com.zhangheng.mymusicplayer.fragment;
 
 import android.app.Fragment;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
@@ -13,17 +12,15 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.text.format.DateFormat;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -31,7 +28,6 @@ import com.project.myutilslibrary.pictureloader.PictureLoader;
 import com.project.myutilslibrary.wrapper_picture.BlurUtils;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
-import com.zhangheng.mymusicplayer.activity.MusicListActivity;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.engine.Controller;
 
@@ -53,8 +49,6 @@ import butterknife.Unbinder;
 public class MainPageFragment extends Fragment implements View.OnClickListener{
 
     private static final String TAG = "MainPageFragment";
-
-    public static final int REQUEST_CODE_LIST_FRAGMENT = 0;
 
     /** 控制器对象,当界面上的组件被触发(点击)是调用相关的控制器方法即可实现相应的功能,无需关注判断逻辑 */
     private Controller mController;
@@ -102,7 +96,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
 
         EventBus.getDefault().register(this);
 
-        setHasOptionsMenu(true);// 告知FragmentManager本页面包含Menu
         setRetainInstance(true);// 保留Fragment状态,在Activity销毁重建的过程中不销毁Fragment
     }
 
@@ -154,18 +147,21 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
             public boolean onPreDraw() {
                 albumFrame.getViewTreeObserver().removeOnPreDrawListener(this);
 
-                DisplayMetrics displayMetrics = new DisplayMetrics();
-                getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-                int widthPixels = displayMetrics.widthPixels;
-                int heightPixels = displayMetrics.heightPixels / 2;
+                View albumParentLayout = mView.findViewById(R.id.album_parent_layout);
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) albumParentLayout.getLayoutParams();
+                int actionbarHeight = ((AppCompatActivity)getActivity()).getSupportActionBar().getHeight();
+                params.setMargins(0,actionbarHeight,0,0);
+
+                int widthPixels = albumParentLayout.getWidth();
+                int heightPixels = albumParentLayout.getHeight();
 
                 if (widthPixels < heightPixels) {
-                    mAlbumPictureSize = (int) (widthPixels * 0.8f);
+                    mAlbumPictureSize = (int) (widthPixels * 0.9f);
                 } else {
-                    mAlbumPictureSize = (int) (heightPixels * 0.8f);
+                    mAlbumPictureSize = (int) (heightPixels * 0.9f);
                 }
 
-                ViewGroup.LayoutParams layoutParams = albumFrame.getLayoutParams();
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) albumFrame.getLayoutParams();
                 layoutParams.height = mAlbumPictureSize;
                 layoutParams.width = mAlbumPictureSize;
                 albumFrame.setLayoutParams(layoutParams);
@@ -194,30 +190,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
                 break;
         }
     }
-
-    ///////////== 关于ActionBar的方法start==/////////////
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.menu_main_page_list, menu);
-    }
-
-    @Override
-    public void onPrepareOptionsMenu(Menu menu) {
-        super.onPrepareOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_item_list:
-                Intent i = new Intent(getActivity(), MusicListActivity.class);
-                getActivity().startActivityForResult(i, REQUEST_CODE_LIST_FRAGMENT);
-                return true;// 表示处理该事件
-        }
-        return super.onOptionsItemSelected(item);
-    }
-    ///////////== 关于ActionBar的方法end==/////////////
 
     // Event处理
     @Subscribe(threadMode = ThreadMode.MAIN)

@@ -13,7 +13,6 @@ import com.project.myutilslibrary.Toaster;
 import com.project.myutilslibrary.pictureloader.PictureLoader;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.global.Constants;
-import com.zhangheng.mymusicplayer.interfaces.IControll;
 import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
 
@@ -37,7 +36,7 @@ public class Controller {
     private Context mContext;
     /** 调用Service方法的IBinder接口 */
     /** 调用Service方法的IBinder接口 */
-    private IControll mIControll;
+    private AudioPlayer mAudioPlayer;
     /** 服务绑定状态的监听器 */
     private ControllerServiceConnection mControllerServiceConnection;
 
@@ -166,8 +165,8 @@ public class Controller {
         /** 当服务连接上的时候,强转Ibinder代理接口,用于调用PlayerService的方法 */
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            mIControll = (IControll) service;
-            mIControll.setOnAudioPlayerCreateListener(new ControllerOnMediaPlayerStateChangedListener());
+            mAudioPlayer = ((AudioPlayer.MyBinder) service).getController();
+            mAudioPlayer.setOnAudioPlayerCreateListener(new ControllerOnMediaPlayerStateChangedListener());
             Log.w(TAG, "onServiceConnected: ");
         }
 
@@ -244,7 +243,7 @@ public class Controller {
 
         Log.w(TAG, "updateRemoteView: ");
         PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
-                bitmap -> mIControll.setRemoteViewInfo(
+                bitmap -> mAudioPlayer.setRemoteViewInfo(
                         mCurrentMusicBean.getMusicName(),
                         mCurrentMusicBean.getSinger(),
                         bitmap,
@@ -269,7 +268,7 @@ public class Controller {
         }
 
         try {
-            mIControll.prepare(mCurrentMusicBean.getPath());
+            mAudioPlayer.prepare(mCurrentMusicBean.getPath());
         } catch (IOException e) {
             Toaster.toastLong(mContext, "歌曲:\"" + mCurrentMusicBean.getMusicName() + "\"丢失. 请尝试重新扫描本地歌曲");
             next();
@@ -280,9 +279,9 @@ public class Controller {
     /** 调用此播放或暂停,暴露给UI层的方法,无需关注具体的判断处理 */
     public void play() {
         if (mCurrentPlayerState == PLAYER_STATE_PLAYING) {
-            mIControll.pause();
+            mAudioPlayer.pause();
         } else if (mCurrentPlayerState == PLAYER_STATE_PAUSE) {
-            mIControll.resume();
+            mAudioPlayer.resume();
         } else {
             if (mCurrentMusicBean != null) {
                 changeMusicTo(mCurrentMusicBean);
@@ -296,14 +295,14 @@ public class Controller {
     /** UI层不需要调用该方法,这里专为广播接收者提供 */
     public void specialPlay() {
         if (mCurrentPlayerState == PLAYER_STATE_PAUSE) {
-            mIControll.resume();
+            mAudioPlayer.resume();
         }
     }
 
     /** UI层不需要调用该方法,这里专为广播接收者提供 */
     public void specialPause() {
-        if (mCurrentPlayerState == PLAYER_STATE_PLAYING && mIControll != null) {
-            mIControll.pause();
+        if (mCurrentPlayerState == PLAYER_STATE_PLAYING && mAudioPlayer != null) {
+            mAudioPlayer.pause();
         }
     }
 
@@ -326,7 +325,7 @@ public class Controller {
     public void seekTo(int seekToProgress) {
         Log.w(TAG, "seekTo: mCurrentPlayerState: " + mCurrentPlayerState);
         if (mCurrentPlayerState != PLAYER_STATE_IDLE) {
-            mIControll.seekProgress(seekToProgress);
+            mAudioPlayer.seekProgress(seekToProgress);
         } else {
             /* 如果歌曲处于不可播放状态而用户拖动了进度条,则按照完成播放处理,将进度置0 */
             EventBus.getDefault().post(new CompleteEvent());

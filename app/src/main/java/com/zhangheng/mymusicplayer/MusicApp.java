@@ -9,7 +9,8 @@ import android.util.Log;
 
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.engine.Controller;
-import com.zhangheng.mymusicplayer.listener.OnOffTimerListener;
+
+import org.greenrobot.eventbus.EventBus;
 
 /**
  * Created by zhangH on 2016/6/7.
@@ -19,7 +20,13 @@ public class MusicApp extends Application {
 
     public static long sTotalDate;
 
-    private static OnOffTimerListener sOffTimerListener;
+    public class OffTimerEvent{
+        public long timerDate;
+
+        public OffTimerEvent(long timerDate) {
+            this.timerDate = timerDate;
+        }
+    }
 
     private Handler mHandler = new Handler() {
 
@@ -38,23 +45,11 @@ public class MusicApp extends Application {
         }
     };
 
-    /** 添加定时器监听器, 可以调用removeOnOffTimerListener()来移除该监听器 */
-    public void setOnOffTimerListener(OnOffTimerListener offTimerListener) {
-        sOffTimerListener = offTimerListener;
-    }
-
-    /** 移除定时器添加器 */
-    public void removeOnOffTimerListener() {
-        sOffTimerListener = null;
-    }
-
     /** 设置关闭播放器的定时器 */
-    public void setOffTimer(long millis, OnOffTimerListener offTimerListener) {
+    public void setOffTimer(long millis) {
 
         /* 移除原有的定时器,重新定时 */
         cancelOffTimer();
-
-        setOnOffTimerListener(offTimerListener);
 
         /* 延迟定时秒数后执行关闭本程序的操作 */
         mHandler.postDelayed(() -> {
@@ -77,9 +72,7 @@ public class MusicApp extends Application {
     }
 
     private void notifyListener() {
-        if (sOffTimerListener != null) {
-            sOffTimerListener.onOffTimer((sTotalDate));
-        }
+        EventBus.getDefault().post(new OffTimerEvent(sTotalDate));
     }
 
     private void timer() {
@@ -91,7 +84,6 @@ public class MusicApp extends Application {
     }
 
     public void cancelOffTimer() {
-        removeOnOffTimerListener();
         mHandler.removeCallbacksAndMessages(null);
         sTotalDate = 0;
     }
