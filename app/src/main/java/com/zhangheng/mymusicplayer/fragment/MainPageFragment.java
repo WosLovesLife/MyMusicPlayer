@@ -25,7 +25,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.project.myutilslibrary.pictureloader.PictureLoader;
-import com.project.myutilslibrary.wrapper_picture.BlurUtils;
+import com.wosloveslife.utils.stackblur_java.StackBlurManager;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
@@ -59,7 +59,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
     //--组件-start--
     /** 填充给Activity的View */
     private View mView;
-
     /** 进度条,拖动改变播放进度 */
     @BindView(R.id.progress_mainpageSeekBar)
     SeekBar mProgress_sb;
@@ -273,7 +272,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
             /* 设置不带动画的专辑图片 */
             mAlbumPicture.setImageBitmap(bitmap);
             /* 设置不带动画的背景模糊图片 */
-            BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 30);
+            BitmapDrawable shadowBg = new BitmapDrawable(getResources(),new StackBlurManager(bgBitmap).process(100));
             bgView.setBackground(shadowBg);
         } else {
             /* 设置带平滑过渡动画的专辑图片 */
@@ -289,7 +288,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
                 sourceBg = new BitmapDrawable(getResources(),BitmapFactory.decodeResource(getResources(), android.R.color.white));
             }
             /* 对原图片进行高斯模糊处理 */
-            BitmapDrawable shadowBg = BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 50);
+            BitmapDrawable shadowBg = new BitmapDrawable(getResources(),new StackBlurManager(bgBitmap).process(100));
+
             TransitionDrawable transitionDrawable = getTransitionDrawable(sourceBg, shadowBg, 520);
             bgView.setBackground(transitionDrawable);
         }
@@ -321,8 +321,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
         public void onStopTrackingTouch(SeekBar seekBar) {
             mController.seekTo(seekBar.getProgress());
             isSeekBarHeld = false;
-
         }
     }
-    /////////////==进度条SeekBar的事件监听end==////////////////
 }
