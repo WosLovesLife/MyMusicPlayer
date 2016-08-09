@@ -101,7 +101,7 @@ public class MainPageActivity extends AppCompatActivity implements NavigationVie
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        EventBus.getDefault().post(this);
+        EventBus.getDefault().unregister(this);
     }
 
     protected void initView() {
