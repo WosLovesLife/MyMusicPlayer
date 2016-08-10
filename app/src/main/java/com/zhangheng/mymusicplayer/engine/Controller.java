@@ -17,6 +17,8 @@ import com.zhangheng.mymusicplayer.listener.OnMediaPlayerStateChangedListener;
 import com.zhangheng.mymusicplayer.service.AudioPlayer;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 
@@ -230,6 +232,7 @@ public class Controller {
 
         @Override
         public void onPlayComplete() {
+            Log.w(TAG, "onPlayComplete: ");
             mCurrentPlayerState = PLAYER_STATE_IDLE;
             EventBus.getDefault().post(new CompleteEvent());
 
@@ -252,14 +255,26 @@ public class Controller {
     }
 
     /** UI层通过传递此回调接口, 当本类中的播放状态发生改变的时候,触发相应的回调方法. */
-    public void notifyPlayerState() {
+    public void syncPlayerState() {
         /** 当UI界面启动时,如果注册了该监听,则向UI层反馈当前的播放状态,让UI同步到正确的位置 */
         updateUi(true);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onItemChangedEvent(MusicDispatcher.ItemChangedEvent event) {
+
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     /* 通知音乐服务播放歌曲,本方法执行完后会等待AudioPlayer177行的 onPrepared()方法的回调 */
     public void changeMusicTo(MusicBean musicBean) {
+        Log.w(TAG, "changeMusicTo: ");
+//        /* 如果调用了该方法,但是bean对象没改变则不做处理,防止播放中打断重播 */
+//        if (mCurrentMusicBean == musicBean && mCurrentPlayerState == PLAYER_STATE_PLAYING) {
+//            Toaster.toast(mContext,"只有这一首哦~");
+//            return;
+//        }
+
         mCurrentMusicBean = musicBean;
 
         if (mCurrentMusicBean == null) {
@@ -270,10 +285,9 @@ public class Controller {
         try {
             mAudioPlayer.prepare(mCurrentMusicBean.getPath());
         } catch (IOException e) {
-            Toaster.toastLong(mContext, "歌曲:\"" + mCurrentMusicBean.getMusicName() + "\"丢失. 请尝试重新扫描本地歌曲");
-            next();
+            Toaster.toastLong(mContext, "歌曲:\"" + mCurrentMusicBean.getMusicName() + "\"可能丢失. 请尝试重新扫描本地歌曲");
+            //TODO: 这里应该弹一个SnackBar 提示用户歌曲异常, 点击删除这首或者进入下一首
         }
-        Log.w(TAG, "jumpTo: ");
     }
 
     /** 调用此播放或暂停,暴露给UI层的方法,无需关注具体的判断处理 */
@@ -336,12 +350,11 @@ public class Controller {
     /** 调用该方法结束播放服务 */
     public void stopAudioService() {
         if (ServiceStateUtils.isRunning(mContext, AudioPlayer.class)) {
+            Log.w(TAG, "stopAudioService: ");
 
             mContext.unbindService(mControllerServiceConnection);
             Intent i = new Intent(mContext, AudioPlayer.class);
             mContext.stopService(i);
-
-            Log.w(TAG, "stopAudioService: ");
         }
     }
 }

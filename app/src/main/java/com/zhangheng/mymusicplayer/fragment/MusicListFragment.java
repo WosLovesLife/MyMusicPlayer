@@ -134,7 +134,7 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
     /** 当用户点击某个条目时,通知调度者播放指定的歌曲 */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onItemCLickEvent(MusicListAdapter.MusicItemClickedEvent event){
-        mMusicDispatcher.playSelectedItem(event.mPosition);
+        mMusicDispatcher.getSelectedItem(event.mPosition);
         Log.w(TAG, "onItemCLickEvent: 收到事件, MusicBean = "+event.mMusicBean+"; position = "+event.mPosition );
     }
 

@@ -46,7 +46,7 @@ import butterknife.Unbinder;
  * 和Controller沟通 通过在此页面所做的控制,通过Controller做逻辑处理
  * Controller通过回调方法将播放状态返回给本类更新UI
  */
-public class MainPageFragment extends Fragment implements View.OnClickListener{
+public class MainPageFragment extends Fragment implements View.OnClickListener {
 
     private static final String TAG = "MainPageFragment";
 
@@ -102,8 +102,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mView = inflater.inflate(R.layout.fragment_main_page, container, false);
-        
-        mBind = ButterKnife.bind(this,mView);
+
+        mBind = ButterKnife.bind(this, mView);
 
         return mView;
     }
@@ -117,12 +117,17 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
         /** 获取控制器 */
         mController = Controller.newInstance(getActivity());
 
-        /** 监听歌曲信息和播放状态 */
-        mController.notifyPlayerState();
-
         setViewFunction();
 
         initAlbumPictureSize();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        /** 在启动时同步状态 */
+        mController.syncPlayerState();
     }
 
     /** 停止监听,节省资源 */
@@ -148,8 +153,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
 
                 View albumParentLayout = mView.findViewById(R.id.album_parent_layout);
                 LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) albumParentLayout.getLayoutParams();
-                int actionbarHeight = ((AppCompatActivity)getActivity()).getSupportActionBar().getHeight();
-                params.setMargins(0,actionbarHeight,0,0);
+                int actionbarHeight = ((AppCompatActivity) getActivity()).getSupportActionBar().getHeight();
+                params.setMargins(0, actionbarHeight, 0, 0);
 
                 int widthPixels = albumParentLayout.getWidth();
                 int heightPixels = albumParentLayout.getHeight();
@@ -175,7 +180,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
     }
 
     @Override
-    @OnClick({R.id.play_mainpageButton,R.id.pre_mainpageButton,R.id.next_mainpageButton})
+    @OnClick({R.id.play_mainpageButton, R.id.pre_mainpageButton, R.id.next_mainpageButton})
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.play_mainpageButton:
@@ -194,7 +199,9 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onChangeMusicEvent(Controller.ChangeMusicEvent event) {
         Controller.BaseEvent baseEvent = event.mBaseEvent;
-        disposeStateChanged(baseEvent.musicBean,baseEvent.isPlaying,baseEvent.duration,baseEvent.progress);
+        disposeStateChanged(baseEvent.musicBean, baseEvent.isPlaying, baseEvent.duration, baseEvent.progress);
+
+        if (baseEvent.musicBean == null) return;
 
         PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
                 this::setPlayerSkin,
@@ -216,8 +223,8 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
 
         ActionBar supportActionBar = a.getSupportActionBar();
         if (supportActionBar != null) {
-            supportActionBar.setTitle(musicBean.getMusicName());
-            supportActionBar.setSubtitle(musicBean.getSinger());
+            supportActionBar.setTitle(musicBean == null ? "" : musicBean.getMusicName());
+            supportActionBar.setSubtitle(musicBean == null ? "" : musicBean.getSinger());
         }
 
         updateViewState(isPlaying, duration, progress);
@@ -272,23 +279,23 @@ public class MainPageFragment extends Fragment implements View.OnClickListener{
             /* 设置不带动画的专辑图片 */
             mAlbumPicture.setImageBitmap(bitmap);
             /* 设置不带动画的背景模糊图片 */
-            BitmapDrawable shadowBg = new BitmapDrawable(getResources(),new StackBlurManager(bgBitmap).process(100));
+            BitmapDrawable shadowBg = new BitmapDrawable(getResources(), new StackBlurManager(bgBitmap).process(100));
             bgView.setBackground(shadowBg);
         } else {
             /* 设置带平滑过渡动画的专辑图片 */
             Drawable drawable = mAlbumPicture.getDrawable();
             if (drawable == null) {
-                drawable = new BitmapDrawable(getResources(),BitmapFactory.decodeResource(getResources(), android.R.color.white));
+                drawable = new BitmapDrawable(getResources(), BitmapFactory.decodeResource(getResources(), android.R.color.white));
             }
-            TransitionDrawable albumPictureWithShadow = getTransitionDrawable(drawable, new BitmapDrawable(getResources(),bitmap), 520);
+            TransitionDrawable albumPictureWithShadow = getTransitionDrawable(drawable, new BitmapDrawable(getResources(), bitmap), 520);
             mAlbumPicture.setImageDrawable(albumPictureWithShadow);
 
             /* 设置带平滑过渡动画的背景模糊图片 */
             if (sourceBg == null) {
-                sourceBg = new BitmapDrawable(getResources(),BitmapFactory.decodeResource(getResources(), android.R.color.white));
+                sourceBg = new BitmapDrawable(getResources(), BitmapFactory.decodeResource(getResources(), android.R.color.white));
             }
             /* 对原图片进行高斯模糊处理 */
-            BitmapDrawable shadowBg = new BitmapDrawable(getResources(),new StackBlurManager(bgBitmap).process(100));
+            BitmapDrawable shadowBg = new BitmapDrawable(getResources(), new StackBlurManager(bgBitmap).process(100));
 
             TransitionDrawable transitionDrawable = getTransitionDrawable(sourceBg, shadowBg, 520);
             bgView.setBackground(transitionDrawable);

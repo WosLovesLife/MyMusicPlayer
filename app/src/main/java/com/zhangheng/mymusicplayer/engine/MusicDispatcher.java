@@ -41,7 +41,7 @@ public class MusicDispatcher {
     private MusicBean mCurrentMusic;
 
     // Events
-    public class DataChangedEvent{
+    public class DataChangedEvent {
         public ArrayList<MusicBean> mMusicBeanArray;
         public ArrayList<String> mMusicIndexArray;
         public int mCurrentIndex;
@@ -53,7 +53,7 @@ public class MusicDispatcher {
         }
     }
 
-    public class ItemChangedEvent{
+    public class ItemChangedEvent {
         public int mCurrentIndex;
 
         public ItemChangedEvent(int currentIndex) {
@@ -90,7 +90,18 @@ public class MusicDispatcher {
     }
 
     private void notifyDataSetChanged() {
-        EventBus.getDefault().post(new DataChangedEvent(sMusicBeanArray,sMusicIndexArray,sCurrentIndex));
+        if (sCurrentIndex > 0 && sMusicBeanArray.size() > sCurrentIndex) {
+            mCurrentMusic = sMusicBeanArray.get(sCurrentIndex);
+        } else if (sMusicBeanArray.size() > 0) {
+            mCurrentMusic = sMusicBeanArray.get(0);
+            sCurrentIndex = 0;
+        } else {
+            mCurrentMusic = null;
+            sCurrentIndex = -1;
+        }
+
+        EventBus.getDefault().post(new DataChangedEvent(sMusicBeanArray, sMusicIndexArray, sCurrentIndex));
+//        informPlay();
     }
 
     private void notifyFoundLastSavedMusic(MusicBean musicBean) {
@@ -113,10 +124,10 @@ public class MusicDispatcher {
         SearchMusics.getMusicListFromSdCard(mContext, (musicBeanList, musicIndexList, savedIndex) -> {
             refreshMusicArray(musicBeanList, musicIndexList);
             sCurrentIndex = savedIndex;
-        },onMusicSearchingListener);
+        }, onMusicSearchingListener);
     }
 
-    public void playSelectedItem(int position) throws PlayerException {
+    public void getSelectedItem(int position) throws PlayerException {
         sCurrentIndex = position;
         Log.w(TAG, "playSelectedItem: sCurrentIndex: " + sCurrentIndex);
         informPlay();
@@ -146,20 +157,20 @@ public class MusicDispatcher {
     private void informPlay() {
         if (sMusicBeanArray.size() > 0) {
             mCurrentMusic = sMusicBeanArray.get(sCurrentIndex);
-            Controller.newInstance(mContext).changeMusicTo(mCurrentMusic);
-
-            EventBus.getDefault().post(new ItemChangedEvent(sCurrentIndex));
             Log.w(TAG, "informPlay: mDataChangedListenerList.onItemChanged(sCurrentIndex): " + sCurrentIndex);
 
             saveMusic();
         } else {
+            mCurrentMusic = null;
             Toaster.toast(mContext, "没有歌曲,请尝试扫描本地歌曲");
         }
 
+        Controller.newInstance(mContext).changeMusicTo(mCurrentMusic);
+        EventBus.getDefault().post(new ItemChangedEvent(sCurrentIndex));
     }
 
     /** 通知事件 */
-    public void notifyMusicsEventPost(){
+    public void notifyMusicsEventPost() {
         notifyDataSetChanged();
     }
 
