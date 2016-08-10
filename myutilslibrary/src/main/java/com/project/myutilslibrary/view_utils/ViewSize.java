@@ -15,15 +15,20 @@ public class ViewSize {
 
     public static void getSize(final View view, final OnGotSizeListener listener) {
         final Point size = new Point(0, 0);
-        if (null != view && view.getMeasuredWidth() == 0 && view.getMeasuredHeight() == 0) {
-            view.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    view.getViewTreeObserver().removeOnPreDrawListener(this);
-                    listener.onGetSize(size);
-                    return true;
-                }
-            });
+        if (null != view) {
+            if (view.getMeasuredWidth() == 0 && view.getMeasuredHeight() == 0){
+                view.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        view.getViewTreeObserver().removeOnPreDrawListener(this);
+                        listener.onGetSize(size);
+                        return true;
+                    }
+                });
+            }else {
+                size.x = view.getMeasuredWidth();
+                size.y = view.getMeasuredHeight();
+            }
         } else {
             listener.onGetSize(size);
         }

@@ -13,6 +13,7 @@ import com.project.myutilslibrary.mp3agic.InvalidDataException;
 import com.project.myutilslibrary.mp3agic.Mp3File;
 import com.project.myutilslibrary.mp3agic.UnsupportedTagException;
 import com.project.myutilslibrary.view_utils.ViewSize;
+import com.project.myutilslibrary.wrapper_picture.CropPicture;
 
 import java.io.IOException;
 
@@ -139,12 +140,16 @@ public class PictureLoader {
 //            getCacheBitmap(listener, picPath, imageView, imageViewWidth, imageViewHeight);
 //        }
 
-        ViewSize.getSize(imageView, new ViewSize.OnGotSizeListener() {
-            @Override
-            public void onGetSize(Point size) {
-                getCacheBitmap(listener, picPath, imageView, size.x, size.y);
-            }
-        });
+        if (imageViewWidth > 0 || imageViewHeight > 0) {
+            getCacheBitmap(listener, picPath, imageView, imageViewWidth, imageViewHeight);
+        } else {
+            ViewSize.getSize(imageView, new ViewSize.OnGotSizeListener() {
+                @Override
+                public void onGetSize(Point size) {
+                    getCacheBitmap(listener, picPath, imageView, size.x, size.y);
+                }
+            });
+        }
     }
 
     private void getCacheBitmap(OnPictureLoadHandleListener listener, String picPath, View imageView, int imageViewWidth, int imageViewHeight) {
@@ -197,7 +202,8 @@ public class PictureLoader {
             ID3v2 id3v2Tag = mp3File.getId3v2Tag();
             byte[] albumImage = id3v2Tag.getAlbumImage();
             if (albumImage != null) {
-                cache = PictureScaleUtils.getScaledBitmap(albumImage, width, height);
+                Bitmap bitmap = CropPicture.getScaledDrawable(albumImage, width + 0f, height + 0f, Bitmap.Config.RGB_565);
+                return CropPicture.ImageCrop(bitmap, width, height);
             }
         }
         return cache;

@@ -24,8 +24,10 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.project.myutilslibrary.mp3agic.InvalidDataException;
+import com.project.myutilslibrary.mp3agic.UnsupportedTagException;
 import com.project.myutilslibrary.pictureloader.PictureLoader;
-import com.wosloveslife.utils.stackblur_java.StackBlurManager;
+import com.wosloveslife.utils.wrapper_picture.BlurUtils;
 import com.zhangheng.mymusicplayer.R;
 import com.zhangheng.mymusicplayer.activity.MainPageActivity;
 import com.zhangheng.mymusicplayer.bean.MusicBean;
@@ -35,10 +37,17 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.IOException;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
+import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by WosLovesLife on 2016/4/30.
@@ -87,7 +96,11 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     /** 显示专辑图片的控件的尺寸,用于决定图片的大小 */
     private int mAlbumPictureSize;
 
+    /* 第一次打开时不显示过度动画 */
     private boolean mIsReshow;
+
+    private Bitmap mAlbumBitmap;
+    private Bitmap mBgBitmap;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -112,8 +125,6 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        mIsReshow = true;
-
         /** 获取控制器 */
         mController = Controller.newInstance(getActivity());
 
@@ -126,8 +137,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
     public void onStart() {
         super.onStart();
 
-        /** 在启动时同步状态 */
-        mController.syncPlayerState();
+        mIsReshow = true;
     }
 
     /** 停止监听,节省资源 */
@@ -170,6 +180,9 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
                 layoutParams.width = mAlbumPictureSize;
                 albumFrame.setLayoutParams(layoutParams);
 
+                /** 监听歌曲信息和播放状态 */
+                mController.syncPlayerState();
+
                 return true;
             }
         });
@@ -203,12 +216,43 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 
         if (baseEvent.musicBean == null) return;
 
-        PictureLoader.newInstance().setCacheBitmapFromMp3Idv3(
-                this::setPlayerSkin,
-                baseEvent.musicBean.getPath(),
-                mAlbumPicture,
-                mAlbumPictureSize,
-                mAlbumPictureSize);
+        Observable.just(baseEvent.musicBean)
+                .map(new Func1<MusicBean, String>() {
+                    @Override
+                    public String call(MusicBean musicBean) {
+                        return musicBean.getPath();
+                    }
+                })
+                .map(new Func1<String, Bitmap>() {
+                    @Override
+                    public Bitmap call(String musicPath) {
+                        try {
+                            return PictureLoader.getAlbumFromMp3(musicPath, mAlbumPictureSize, mAlbumPictureSize);
+                        } catch (InvalidDataException | IOException | UnsupportedTagException e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }
+                })
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<Bitmap>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.w(TAG, "onCompleted: ");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(TAG, "onError: ", e);
+                    }
+
+                    @Override
+                    public void onNext(Bitmap bitmap) {
+                        Log.w(TAG, "onNext: ");
+                        setPlayerSkin(bitmap);
+                    }
+                });
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -263,6 +307,7 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
 
     /** 设置播放器的皮肤, 专辑图片和背景图片 */
     private void setPlayerSkin(Bitmap bitmap) {
+        View bgView = ((MainPageActivity) getActivity()).getBgView();
 
         Bitmap bgBitmap = bitmap;
         if (bitmap == null) {
@@ -270,36 +315,35 @@ public class MainPageFragment extends Fragment implements View.OnClickListener {
             bgBitmap = BitmapFactory.decodeResource(getActivity().getResources(), R.drawable.playpage_background);
         }
 
-        View bgView = ((MainPageActivity) getActivity()).getBgView();
-        Drawable sourceBg = bgView.getBackground();
-
+        Drawable targetAlbumDrawable;
+        Drawable targetBgDrawable;
         if (mIsReshow) {
             mIsReshow = false;
 
             /* 设置不带动画的专辑图片 */
-            mAlbumPicture.setImageBitmap(bitmap);
+            targetAlbumDrawable = new BitmapDrawable(getResources(), bitmap);
             /* 设置不带动画的背景模糊图片 */
-            BitmapDrawable shadowBg = new BitmapDrawable(getResources(), new StackBlurManager(bgBitmap).process(100));
-            bgView.setBackground(shadowBg);
+            targetBgDrawable = new BitmapDrawable(getResources(), BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 50));
         } else {
-            /* 设置带平滑过渡动画的专辑图片 */
-            Drawable drawable = mAlbumPicture.getDrawable();
-            if (drawable == null) {
-                drawable = new BitmapDrawable(getResources(), BitmapFactory.decodeResource(getResources(), android.R.color.white));
+            /* 如果原封面为null,则赋默认值 */
+            Drawable sourceAlbumDrawable = mAlbumPicture.getDrawable();
+            if (sourceAlbumDrawable == null) {
+                sourceAlbumDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeResource(getResources(), android.R.color.white));
             }
-            TransitionDrawable albumPictureWithShadow = getTransitionDrawable(drawable, new BitmapDrawable(getResources(), bitmap), 520);
-            mAlbumPicture.setImageDrawable(albumPictureWithShadow);
+            /* 转换成过渡Drawable */
+            targetAlbumDrawable = getTransitionDrawable(sourceAlbumDrawable, new BitmapDrawable(getResources(), bitmap), 520);
 
-            /* 设置带平滑过渡动画的背景模糊图片 */
-            if (sourceBg == null) {
-                sourceBg = new BitmapDrawable(getResources(), BitmapFactory.decodeResource(getResources(), android.R.color.white));
+            /* 如果原背景为null,则赋默认值 */
+            Drawable sourceBgDrawable = bgView.getBackground();
+            if (sourceBgDrawable == null) {
+                sourceBgDrawable = new BitmapDrawable(getResources(), BitmapFactory.decodeResource(getResources(), R.drawable.playpage_background));
             }
-            /* 对原图片进行高斯模糊处理 */
-            BitmapDrawable shadowBg = new BitmapDrawable(getResources(), new StackBlurManager(bgBitmap).process(100));
-
-            TransitionDrawable transitionDrawable = getTransitionDrawable(sourceBg, shadowBg, 520);
-            bgView.setBackground(transitionDrawable);
+            /* 对原图片进行高斯模糊处理, 并转换成过渡Drawable */
+            BitmapDrawable shadowBg = new BitmapDrawable(getResources(), BlurUtils.makePictureBlur(getActivity(), bgBitmap, bgView, 2, 50));
+            targetBgDrawable = getTransitionDrawable(sourceBgDrawable, shadowBg, 520);
         }
+        mAlbumPicture.setImageDrawable(targetAlbumDrawable);
+        bgView.setBackground(targetBgDrawable);
     }
 
     /** 色彩平滑过渡的动画 */

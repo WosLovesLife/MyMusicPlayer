@@ -3,9 +3,10 @@ package com.project.myutilslibrary.wrapper_picture;
 import android.graphics.Bitmap;
 
 /**
- * Created by paveld on 3/6/14.
+ * Created by WosLovesLife on 3/6/14.
  */
 public class FastBlur {
+    private static final String TAG = "FastBlur";
 
     public static Bitmap doBlur(Bitmap sentBitmap, int radius, boolean canReuseInBitmap) {
 
@@ -238,7 +239,6 @@ public class FastBlur {
         }
 
         bitmap.setPixels(pix, 0, w, 0, 0, w, h);
-
         return (bitmap);
     }
 }
