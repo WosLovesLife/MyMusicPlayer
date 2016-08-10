@@ -188,9 +188,9 @@ public class MusicDispatcher {
     /** 调用该方法获取当前的状态, 如果当前还在初始化中, 则尝试查询数据库 */
     public void notifyMusicsEventPost() {
         if (sCurrentIndex > 0) {
-            getMusicListFromDatabase();
+            notifyDataSetChanged();
         } else {
-            EventBus.getDefault().post(new DataChangedEvent(sMusicBeanArray, sMusicIndexArray, sCurrentIndex));
+            getMusicListFromDatabase();
         }
     }
 

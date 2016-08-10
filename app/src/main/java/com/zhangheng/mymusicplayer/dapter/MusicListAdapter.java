@@ -41,6 +41,10 @@ public class MusicListAdapter extends BaseRecyclerViewAdapter<MusicBean> {
         notifyItemChanged(position);
     }
 
+    public MusicBean getCurrentItem() {
+        return getItem(mPlaying);
+    }
+
     /** 根据position返回对应的MusicBean */
     public MusicBean getItem(int position) {
         return mData.get(position);

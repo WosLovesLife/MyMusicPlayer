@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.ActionBar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -49,11 +50,10 @@ public class MusicListFragment extends Fragment implements QuickBarWithToast.OnI
     private View mView;
     @BindView(R.id.recycler_view)
     RecyclerView mRecyclerView;
-    @BindView(R.id.toolbar)
-    Toolbar mToolbar;
 
     private Snackbar mSnackbar;
     private Unbinder mBind;
+    private ActionBar mActionBar;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -73,7 +73,8 @@ public class MusicListFragment extends Fragment implements QuickBarWithToast.OnI
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        ((MusicListActivity) getActivity()).setSupportActionBar(mToolbar);
+        ((MusicListActivity) getActivity()).setSupportActionBar((Toolbar) mView.findViewById(R.id.toolbar));
+        mActionBar = ((MusicListActivity) getActivity()).getSupportActionBar();
 
         return mView;
     }
@@ -127,7 +128,7 @@ public class MusicListFragment extends Fragment implements QuickBarWithToast.OnI
 
         mRecyclerView.scrollToPosition(event.mCurrentIndex - 3);
 
-        setMusicInfo(mMusicListAdapter.getItem(event.mCurrentIndex));
+        setMusicInfo(mMusicListAdapter.getCurrentItem());
     }
 
     /** 由于某些原因,例如歌曲不存在等导致播放自动跳到下一首.这种时候需要这里同步位置 */
@@ -185,7 +186,7 @@ public class MusicListFragment extends Fragment implements QuickBarWithToast.OnI
 
     //////
     private void setMusicInfo(MusicBean musicInfo) {
-        mToolbar.setTitle(musicInfo == null ? "" : musicInfo.getMusicName());
-        mToolbar.setSubtitle(musicInfo == null ? "" : musicInfo.getSinger());
+        mActionBar.setTitle(musicInfo == null ? "" : musicInfo.getMusicName());
+        mActionBar.setSubtitle(musicInfo == null ? "" : musicInfo.getSinger());
     }
 }
