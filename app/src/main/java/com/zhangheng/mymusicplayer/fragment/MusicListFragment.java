@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -20,6 +19,8 @@ import android.view.ViewGroup;
 
 import com.project.myutilslibrary.view.quickindex.QuickBarWithToast;
 import com.zhangheng.mymusicplayer.R;
+import com.zhangheng.mymusicplayer.activity.MusicListActivity;
+import com.zhangheng.mymusicplayer.bean.MusicBean;
 import com.zhangheng.mymusicplayer.dapter.MusicListAdapter;
 import com.zhangheng.mymusicplayer.engine.MusicDispatcher;
 
@@ -37,7 +38,7 @@ import butterknife.Unbinder;
  * 管理歌曲列表界面
  * Created by zhangH on 2016/5/17.
  */
-public class MusicListFragment extends Fragment implements  QuickBarWithToast.OnIndexChangedListener {
+public class MusicListFragment extends Fragment implements QuickBarWithToast.OnIndexChangedListener {
     private static final String TAG = "MusicListFragment";
 
     private MusicListAdapter mMusicListAdapter;
@@ -48,6 +49,8 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
     private View mView;
     @BindView(R.id.recycler_view)
     RecyclerView mRecyclerView;
+    @BindView(R.id.toolbar)
+    Toolbar mToolbar;
 
     private Snackbar mSnackbar;
     private Unbinder mBind;
@@ -70,8 +73,7 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        Toolbar toolbar = (Toolbar) mView.findViewById(R.id.toolbar);
-        ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
+        ((MusicListActivity) getActivity()).setSupportActionBar(mToolbar);
 
         return mView;
     }
@@ -103,8 +105,9 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
         mRecyclerView.scrollToPosition(i);
     }
 
+    ////// EventBus事件
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onDataChangedEvent(MusicDispatcher.DataChangedEvent event){
+    public void onDataChangedEvent(MusicDispatcher.DataChangedEvent event) {
         if (mMusicListAdapter == null) {
             mMusicListAdapter = new MusicListAdapter();
             mMusicListAdapter.setData(event.mMusicBeanArray);
@@ -123,22 +126,26 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
         mMusicListAdapter.setPlayedPosition(event.mCurrentIndex);
 
         mRecyclerView.scrollToPosition(event.mCurrentIndex - 3);
+
+        setMusicInfo(mMusicListAdapter.getItem(event.mCurrentIndex));
     }
 
     /** 由于某些原因,例如歌曲不存在等导致播放自动跳到下一首.这种时候需要这里同步位置 */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onItemChangedEvent(MusicDispatcher.ItemChangedEvent event) {
         mMusicListAdapter.setPlayedPosition(event.mCurrentIndex);
+        setMusicInfo(mMusicListAdapter.getItem(event.mCurrentIndex));
     }
 
     /** 当用户点击某个条目时,通知调度者播放指定的歌曲 */
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onItemCLickEvent(MusicListAdapter.MusicItemClickedEvent event){
+    public void onItemCLickEvent(MusicListAdapter.MusicItemClickedEvent event) {
         mMusicDispatcher.getSelectedItem(event.mPosition);
-        Log.w(TAG, "onItemCLickEvent: 收到事件, MusicBean = "+event.mMusicBean+"; position = "+event.mPosition );
+        setMusicInfo(event.mMusicBean);
+        Log.w(TAG, "onItemCLickEvent: 收到事件, MusicBean = " + event.mMusicBean + "; position = " + event.mPosition);
     }
 
-    /////// ToolBar初始化 //////
+    /////// Menu相关 //////
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
@@ -158,6 +165,7 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
         return super.onOptionsItemSelected(item);
     }
 
+    ////// SnackBar提示相关
     private void makeSnackBar() {
         if (mSnackbar == null) {
             mSnackbar = Snackbar.make(mView, "", Snackbar.LENGTH_INDEFINITE);
@@ -173,5 +181,11 @@ public class MusicListFragment extends Fragment implements  QuickBarWithToast.On
                 mSnackbar = null;
             }
         }, 3000);
+    }
+
+    //////
+    private void setMusicInfo(MusicBean musicInfo) {
+        mToolbar.setTitle(musicInfo == null ? "" : musicInfo.getMusicName());
+        mToolbar.setSubtitle(musicInfo == null ? "" : musicInfo.getSinger());
     }
 }

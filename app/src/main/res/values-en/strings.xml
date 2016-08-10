@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">WosMusicPlayer</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="stop_timer">Stop timer</string>
+    <string name="thanks_for_uses">Thanks for uses :)</string>
+    <string name="author_wosloveslife">Author : WosLovesLife</string>
+    <string name="contact_me">Email : zhang599926@gmail.com</string>
+</resources>

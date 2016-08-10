@@ -29,8 +29,6 @@ public class MusicDispatcher {
     private static MusicDispatcher sMusicDispatcher;
     private Context mContext;
 
-//    private OnMusicDispatchDataChangedListener mDataChangedListenerList;
-
     /** 当前的音乐列表集合 */
     private static ArrayList<MusicBean> sMusicBeanArray;
     /** 当前的音乐列表的拼音排序集合,和音乐列表集合一一对应 */
@@ -39,6 +37,8 @@ public class MusicDispatcher {
     /** 当前的索引 = loopIndex % 数据集合.size() */
     private static int sCurrentIndex = -1;
     private MusicBean mCurrentMusic;
+
+    private boolean mSearching;
 
     // Events
     public class DataChangedEvent {
@@ -110,6 +110,12 @@ public class MusicDispatcher {
     }
 
     private void getMusicListFromDatabase() {
+        if (mSearching) {
+            Toaster.toast(mContext,"正在初始化数据,请稍等...");
+            return;
+        }
+        mSearching = true;
+
         SearchMusics.getMusicListFromDatabase(mContext, (musicBeanList, musicIndexList, savedIndex) -> {
             if (musicBeanList.size() > savedIndex) {
                 sCurrentIndex = savedIndex;
@@ -117,13 +123,23 @@ public class MusicDispatcher {
                 notifyFoundLastSavedMusic(musicBeanList.get(savedIndex));
             }
             refreshMusicArray(musicBeanList, musicIndexList);
+
+            mSearching = false;
         });
     }
 
     public void scanSdcardMusics(SearchMusics.OnMusicSearchingListener onMusicSearchingListener) {
+        if (mSearching) {
+            Toaster.toast(mContext,"正在扫描本地音乐,请稍等...");
+            return;
+        }
+        mSearching = true;
+
         SearchMusics.getMusicListFromSdCard(mContext, (musicBeanList, musicIndexList, savedIndex) -> {
             refreshMusicArray(musicBeanList, musicIndexList);
             sCurrentIndex = savedIndex;
+
+            mSearching = false;
         }, onMusicSearchingListener);
     }
 
@@ -169,9 +185,13 @@ public class MusicDispatcher {
         EventBus.getDefault().post(new ItemChangedEvent(sCurrentIndex));
     }
 
-    /** 通知事件 */
+    /** 调用该方法获取当前的状态, 如果当前还在初始化中, 则尝试查询数据库 */
     public void notifyMusicsEventPost() {
-        notifyDataSetChanged();
+        if (sCurrentIndex > 0) {
+            getMusicListFromDatabase();
+        } else {
+            EventBus.getDefault().post(new DataChangedEvent(sMusicBeanArray, sMusicIndexArray, sCurrentIndex));
+        }
     }
 
     public void saveMusic() {

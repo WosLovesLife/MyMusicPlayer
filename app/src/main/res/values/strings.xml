@@ -1,5 +1,9 @@
 <resources>
-    <string name="app_name">MyMusicPlayer</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="app_name">爱生活Player</string>
+    <string name="navigation_drawer_open">展开侧边栏</string>
+    <string name="navigation_drawer_close">收起侧边栏</string>
+    <string name="stop_timer">定时关闭</string>
+    <string name="thanks_for_uses">感谢使用 :)</string>
+    <string name="author_wosloveslife">作者 : WosLovesLife</string>
+    <string name="contact_me">QQ : 1072815335</string>
 </resources>

@@ -29,7 +29,7 @@
             <item
                 android:id="@+id/nav_off_timer"
                 android:icon="@drawable/ic_off_timer"
-                android:title="Stop time"/>
+                android:title="@string/stop_timer"/>
         </menu>
     </item>
 
